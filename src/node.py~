@@ -121,21 +121,21 @@ class Node(object):
 			new_select_dic[new_exp] = select_dic[exp]
 		    else:
 			for item in self.table_list:
-			table = searchTable(item)
-			if table is not None:
-			    for col in table.column_list:
-				tmp_exp = Column(item, col.column_name)
-				new_exp_list.append(tmp_exp)
-				new_select_dic[tmp_exp] = None
-			    for key in self.table_alias_dic.keys():
-				table = searchTable(self.self.table_alias_dic[key])
-				if table is not None:
-				    for col in table.column_list:
-					tmp_exp = Column(item, col.column_name)
-					new_exp_list.append(tmp_exp)
-					new_select_dic[tmp_exp] = None
+			    table = searchTable(item)
+			    if table is not None:
+			        for col in table.column_list:
+				    tmp_exp = Column(item, col.column_name)
+				    new_exp_list.append(tmp_exp)
+				    new_select_dic[tmp_exp] = None
+			for key in self.table_alias_dic.keys():
+			    table = searchTable(self.self.table_alias_dic[key])
+			    if table is not None:
+				for col in table.column_list:
+				    tmp_exp = Column(item, col.column_name)
+				    new_exp_list.append(tmp_exp)
+				    new_select_dic[tmp_exp] = None
 		elif isinstance(exp, Function):
-		    if exp.getGroupbyFuncName() == "COUNT"
+		    if exp.getGroupbyFuncName() == "COUNT":
 			col_list = []
 			exp.getPara(col_list)
 			for col in col_list:
@@ -227,7 +227,7 @@ class SPNode(Node):
 		else:
 		    col_list = searchColumn(exp.column_name)
 		    for col in col_list:
-			if col.table_schema.table_name in table_list or in table_alias_dic.values():
+			if col.table_schema.table_name in table_list or col.table_schema.table_name in table_alias_dic.values():
 			    col_type = col.table_schema.getColumnByName(exp.column_name).column_type
 		    if col_type is not None:
 			if exp_dic[exp] is not None:

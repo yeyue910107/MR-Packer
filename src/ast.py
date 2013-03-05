@@ -14,10 +14,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-import expression
-import util
-import node
+from expression import *
+from util import *
+from node import *
+from schema import *
 import copy
+from xml.dom import minidom, Node
 
 class ASTreeNode:
     line_num = 0
@@ -43,11 +45,11 @@ class ASTreeNode:
     def toRootSelectNode(self):
 	rs_node = RootSelectNode()
 	
-	if ast.token_name != "SELECT":
+	if self.token_name != "SELECT":
 	    # TODO error
             pass
 	
-	for child in ast.child_list:
+	for child in self.child_list:
 
 	    if child.token_name == "COLUMN_LIST":
 		rs_node.select_list = SelectListParser(child)
@@ -147,7 +149,7 @@ class SelectListParser(ASTreeNodeParser):
 		    if fin_flag == True:
 			input_exp_list.append(token)
 			
-		exp = exp_parser.convertTokenListToExp(input_exp_list)
+		exp = exp_parser.parse(input_exp_list)
 		
 		# setup alias
 		
@@ -175,7 +177,7 @@ class SelectListParser(ASTreeNodeParser):
 	    if child.token_name == "SELECT_COLUMN":
 		tmp_str = ""
 		for child in child.child_list:
-			tmp_str += child.content
+			tmp_str += str(child.content)
 		ret_str += tmp_str
 		
 	    elif child.token_name == "COMMA":
@@ -422,7 +424,7 @@ class OrderbyParser(ASTreeNodeParser):
 	self.orderby_type_list = tmp_orderby_type_list
 	return ret_exp_list
 
-    def processSchemaFile(schema):
+def processSchemaFile(schema):
 	global global_table_dic
 	file = open(schema)
 	text = file.readlines()
@@ -432,7 +434,6 @@ class OrderbyParser(ASTreeNodeParser):
 	    line = line.rstrip()
 	    token = line.split("|")
 	    table_name = token[0].upper()
-	
 	    tmp_list = []
 	    for col in token[1:]:
 		if ":" in col:
@@ -443,8 +444,7 @@ class OrderbyParser(ASTreeNodeParser):
                         pass
 		    column = ColumnSchema(col_name, col_type)
 		    tmp_list.append(column)
-	
-	    table = TableSchema(table_name, column)
+	    table = TableSchema(table_name, tmp_list)
 	    global_table_dic[table_name] = table
 
 def fileToRoot(file):
@@ -461,10 +461,10 @@ def nodeToAST(node):
     ast = None
     if node.nodeType == Node.ELEMENT_NODE:
 	if node.nodeName == "node":
-	    line_num = node.attributes.get('linenum').value
+	    line_num = node.attributes.get('line').value
 	    position_in_line = node.attributes.get('positioninline').value
 	    token_name = node.attributes.get('tokenname').value
-	    child_num = node.attributes.get('childnum').value
+	    child_num = node.attributes.get('childcount').value
 	    token_type = node.attributes.get('tokentype').value
 		
 	for child in node.childNodes:
@@ -474,19 +474,16 @@ def nodeToAST(node):
 	ast = ASTreeNode(line_num, position_in_line, token_name, child_num, token_type, content)
 	for child in node.childNodes:
 	    if child.nodeName != "content":
-		child_ast = nodeToAst(child)
+		child_ast = nodeToAST(child)
 		if child_ast is not None:
-		    ast.appendChild(child_ast)
+		   ast.appendChild(child_ast)
 
     return ast
 
 def astToQueryPlan(schema, file):
     processSchemaFile(schema)
     root = fileToRoot(file)
-    ast = nodeToAst(root)
-    # DEBUG
-    print ast
-    pt = ast.toPlanTree()
+    pt = root.toPlanTree()
     pt.postProcess()
 	
 

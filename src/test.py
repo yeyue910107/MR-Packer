@@ -16,10 +16,12 @@
 """
 import ast
 import node
+import schema
+import util
 
 if __name__ == "__main__":
-    _file = open("../test/17.sql", "r")
-    schema = open("../test/tpch.schema", "r")
-    astToQueryPlan(schema, _file)
+    _file = open("../test/17.xml", "r")
+    schema = "../test/tpch.schema"
+    ast.astToQueryPlan(schema, _file)
     _file.close()
     schema.close()

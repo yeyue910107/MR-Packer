@@ -18,6 +18,7 @@ import expression
 import util
 import ast
 import copy
+import schema
 
 class Node(object):
     source = None
@@ -121,21 +122,21 @@ class Node(object):
 			new_select_dic[new_exp] = select_dic[exp]
 		    else:
 			for item in self.table_list:
-			table = searchTable(item)
-			if table is not None:
-			    for col in table.column_list:
-				tmp_exp = Column(item, col.column_name)
-				new_exp_list.append(tmp_exp)
-				new_select_dic[tmp_exp] = None
-			    for key in self.table_alias_dic.keys():
-				table = searchTable(self.self.table_alias_dic[key])
-				if table is not None:
-				    for col in table.column_list:
-					tmp_exp = Column(item, col.column_name)
-					new_exp_list.append(tmp_exp)
-					new_select_dic[tmp_exp] = None
+			    table = searchTable(item)
+			    if table is not None:
+			        for col in table.column_list:
+				    tmp_exp = Column(item, col.column_name)
+				    new_exp_list.append(tmp_exp)
+				    new_select_dic[tmp_exp] = None
+			for key in self.table_alias_dic.keys():
+			    table = searchTable(self.self.table_alias_dic[key])
+			    if table is not None:
+				for col in table.column_list:
+				    tmp_exp = Column(item, col.column_name)
+				    new_exp_list.append(tmp_exp)
+				    new_select_dic[tmp_exp] = None
 		elif isinstance(exp, Function):
-		    if exp.getGroupbyFuncName() == "COUNT"
+		    if exp.getGroupbyFuncName() == "COUNT":
 			col_list = []
 			exp.getPara(col_list)
 			for col in col_list:
@@ -227,7 +228,7 @@ class SPNode(Node):
 		else:
 		    col_list = searchColumn(exp.column_name)
 		    for col in col_list:
-			if col.table_schema.table_name in table_list or in table_alias_dic.values():
+			if col.table_schema.table_name in table_list or col.table_schema.table_name in table_alias_dic.values():
 			    col_type = col.table_schema.getColumnByName(exp.column_name).column_type
 		    if col_type is not None:
 			if exp_dic[exp] is not None:
@@ -235,13 +236,14 @@ class SPNode(Node):
 			else:
 			    tmp_col = ColumnSchema(exp.column_name, col_type)
 			project_list.append(tmp_col)
-		elif isinstance(exp, Function):
-		    if exp_dic[exp] is not None:
-			col_type = exp.getValueType()
-			tmp_col = ColumnSchema(exp_dic[exp], col_type)
-			project_list.append(tmp_col)
-		else:
-		    # TODO error
+	    elif isinstance(exp, Function):
+		if exp_dic[exp] is not None:
+		    col_type = exp.getValueType()
+		    tmp_col = ColumnSchema(exp_dic[exp], col_type)
+		    project_list.append(tmp_col)
+	    else:
+		# TODO error
+		pass
 	
     def __addTableList__(table_list, project_list):
 	for table in table_list:
@@ -253,10 +255,7 @@ class SPNode(Node):
 	
     def checkSchema(self):
 	schema_checker = SchemaChecker(self)
-	if schema_checker.checkSelectList(self) and 
-	    schema_checker.checkWhere(self) and 
-	    schema_checker.checkGroupby(self) and 
-	    self.child.checkSchema():
+	if schema_checker.checkSelectList(self) and schema_checker.checkWhere(self) and schema_checker.checkGroupby(self) and self.child.checkSchema():
 	    return True
 	return False
 		
@@ -303,7 +302,7 @@ class SPNode(Node):
 				break
 					
 			elif isinstance(key, Function):
-			    if item.column_name == select_dic[key]
+			    if item.column_name == select_dic[key]:
 				flag = True
 				item.table_name = ""
 				break
@@ -334,7 +333,7 @@ class SPNode(Node):
 	child_exp_list = self.child.select_list.exp_list
 	child_exp_dic = self.child.exp_alias_dic
 	
-	for exp in self.select_list.exp_list
+	for exp in self.select_list.exp_list:
 	    if isinstance(exp, Column):
 		for child_exp in child_exp_list:
 		    if isinstance(child_exp, Column):
@@ -346,9 +345,7 @@ class SPNode(Node):
 			    new_exp_list.append(child_exp)
 			    new_select_dic[child_exp] = None
 			    break
-		    elif isinstance(child_exp, Function) and 
-			child_exp_dic[child_exp] == exp.column_name and 
-			child_exp not in new_exp_List:
+		    elif isinstance(child_exp, Function) and child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_List:
 			new_exp_list.append(child_exp)
 			new_select_dic[child_exp] = None
 			break
@@ -384,9 +381,7 @@ class TableNode(Node):
 		
     def checkSchema(self):
 	schema_checker = SchemaChecker(self)
-	if searchTable(self.table_name) is not None and 
-	    schema_checker.checkSelectList(self) and 
-	    schema_checker.checkWhere(self):
+	if searchTable(self.table_name) is not None and schema_checker.checkSelectList(self) and schema_checker.checkWhere(self):
 	    return True
 	return False
 	
@@ -535,8 +530,7 @@ class GroupbyNode(Node):
 				
     def __genColumnIndex__(col, exp_list, select_dic):
 	for exp in exp_list:
-	    if isinstance(exp, Column) and col.compare(exp) or 
-		col.column_name == select_dic[exp]
+	    if isinstance(exp, Column) and col.compare(exp) or col.column_name == select_dic[exp]:
 		col.column_name = exp_list.index[exp]
 		break
 
@@ -624,12 +618,12 @@ class JoinNode(Node):
 	filter_name = ""
 	if table_name in self.left_child.table_list or table_name == "LEFT":
 	    fileter_name = "LEFT"
-	else
+	else:
 	    filter_name = "RIGHT"
 	
 	for x in self.select_list.tmp_exp_list:
 	    if isinstance(x, Column):
-		if x.table_name != filter_name
+		if x.table_name != filter_name:
 		    continue
 		index = x.column_name
 		if filter_name == "LEFT":
@@ -670,7 +664,7 @@ class JoinNode(Node):
 	
 	if self.is_explicit:
 	    self.join_condition.on_condition_exp.getPara(tmp_list)
-	else
+	else:
 	    self.join_condition.where_condition_exp.getPara(tmp_list)
 	
 	for i in range(0, len(tmp_list)):
@@ -687,7 +681,7 @@ class JoinNode(Node):
     def setComposite(self, composite, node):
 	if self.left_child == node:
 	    self.left_composite = composite
-	else
+	else:
 	    self.right_composite = composite
 		
     def genProjectList(self):
@@ -787,12 +781,12 @@ class JoinNode(Node):
 	self.left_child.genColumnIndex()
 	self.right_child.genColumnIndex()
 		
-    def __genChildColumnIndex__(self, child, type):
+    def __genChildColumnIndex__(self, child, _type):
 	left_select = None
 	right_select = None
 	self.table_list = []
 	join_exp = None
-	child_name = type ? "LEFT" : "RIGHT"
+	child_name = (_type and "LEFT" or "RIGHT")
 	
 	if self.is_explicit is True:
 	    join_exp = self.join_condition.on_condition_exp
@@ -1056,7 +1050,7 @@ class RootSelectNode(Node):
 		if isinstance(item, RootSelectNode):
 		    sub_tree = item
 		else:
-		    if item.token_name == "ID"
+		    if item.token_name == "ID":
 			id = item.content
 	    item_dic["content"] = sub_tree
 	    item_dic["alias"] = id
@@ -1140,14 +1134,14 @@ class RootSelectNode(Node):
 			item_dic["on_condition"].append(parser)
 			flag = False
 		    item_dic["join_type"].append(join_type)
-		    elif t.content == "ON":
-			input_list = tmp_list[:-1]
-			final_item = self.convertFromList(tmp_list)
-			item_dic["content"].append(final_item)
-			flag = True
-		    tmp_list = []
+		elif t.content == "ON":
+		    input_list = tmp_list[:-1]
+		    final_item = self.convertFromList(tmp_list)
+		    item_dic["content"].append(final_item)
+		    flag = True
+		tmp_list = []
 	
-		parser = OnConditionParser(tmp_list)
-		item_dic["on_condition"].append(parser)
-		tmp_converted_from_list.append(item_dic)
+	    parser = OnConditionParser(tmp_list)
+	    item_dic["on_condition"].append(parser)
+	    tmp_converted_from_list.append(item_dic)
 	

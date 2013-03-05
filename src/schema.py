@@ -18,7 +18,6 @@ import expression
 import util
 import node
 import copy
-import ast
 
 class ColumnSchema:
     column_name = None
@@ -38,15 +37,14 @@ class TableSchema:
     column_list = None
     column_name_list = None
 
-    def __init__(self, table_name, column_list):
-	self.table_name = table_name
-	self.column_list = column_list
-	
-	for item in column_list:
+    def __init__(self, _table_name, _column_list):
+	self.table_name = _table_name
+	self.column_list = _column_list
+	for item in _column_list:
 	    item.table_schema = self
 	
 	self.column_name_list = []
-	for item in column_list:
+	for item in _column_list:
 	    self.column_name_list.append(item.column_name)
 
     def getColumnIndexByName(self, name):
@@ -66,18 +64,24 @@ class SchemaChecker:
 
     def checkSelectList(self):
 	# TODO
+	pass
 	
     def checkGroupby(self):
 	# TODO
+	pass
 
     def checkOrderby(self):
 	# TODO
+	pass
 	
     def checkHaving(self):
 	# TODO
+	pass
 
     def checkWhere(self):
 	# TODO
+	pass
 
     def checkJoin(self):
 	# TODO
+	pass
