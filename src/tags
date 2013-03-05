@@ -1,0 +1,252 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ASTreeNode	ast.py	/^class ASTreeNode:$/;"	c
+ASTreeNodeParser	ast.py	/^class ASTreeNodeParser:$/;"	c
+Column	expression.py	/^class Column(Expression):$/;"	c
+ColumnSchema	schema.py	/^class ColumnSchema:$/;"	c
+Constant	expression.py	/^class Constant(Expression):$/;"	c
+Expression	expression.py	/^class Expression():$/;"	c
+ExpressionParser	expression.py	/^class ExpressionParser:$/;"	c
+Function	expression.py	/^class Function(Expression):$/;"	c
+GroupbyNode	node.py	/^class GroupbyNode(Node):$/;"	c
+GroupbyParser	ast.py	/^class GroupbyParser(ASTreeNodeParser):$/;"	c
+JoinNode	node.py	/^class JoinNode(Node):$/;"	c
+JoinNodeList	node.py	/^class JoinNodeList(Node):$/;"	c
+Node	node.py	/^class Node(object):$/;"	c
+OnConditionParser	ast.py	/^class OnConditionParser(ASTreeNodeParser):$/;"	c
+OrderbyNode	node.py	/^class OrderbyNode(Node):$/;"	c
+OrderbyParser	ast.py	/^class OrderbyParser(ASTreeNodeParser):$/;"	c
+RootSelectNode	node.py	/^class RootSelectNode(Node):$/;"	c
+SPNode	node.py	/^class SPNode(Node):$/;"	c
+SchemaChecker	schema.py	/^class SchemaChecker:$/;"	c
+SelectListParser	ast.py	/^class SelectListParser(ASTreeNodeParser):$/;"	c
+TableNode	node.py	/^class TableNode(Node):$/;"	c
+TableSchema	schema.py	/^class TableSchema:$/;"	c
+WhereConditionParser	ast.py	/^class WhereConditionParser(ASTreeNodeParser):$/;"	c
+__addExpToChildSelectList__	node.py	/^	def __addExpToChildSelectList__(exp, new_exp_list, new_select_dic):$/;"	m	class:GroupbyNode	file:
+__addTableList__	node.py	/^	def __addTableList__(table_list, project_list):$/;"	m	class:SPNode	file:
+__childColumnFilter__	node.py	/^	def __childColumnFilter__(self, child):$/;"	m	class:JoinNode	file:
+__genChildColumnIndex__	node.py	/^	def __genChildColumnIndex__(self, child, type):$/;"	m	class:JoinNode	file:
+__genColumnIndex__	node.py	/^	def __genColumnIndex__(col, $/;"	m	class:JoinNode	file:
+__genColumnIndex__	node.py	/^	def __genColumnIndex__(col, exp_list, select_dic):$/;"	m	class:GroupbyNode	file:
+__genProjectList__	node.py	/^	def __genProjectList__(self, project_list):$/;"	m	class:SPNode	file:
+__genWhereIndex__	node.py	/^	def __genWhereIndex__(self):$/;"	m	class:JoinNode	file:
+__getSelectIndex__	node.py	/^	def __getSelectIndex__(self):$/;"	m	class:JoinNode	file:
+__init__	ast.py	/^	def __init__(self):$/;"	m	class:ASTreeNodeParser
+__init__	ast.py	/^	def __init__(self, groupby):$/;"	m	class:GroupbyParser
+__init__	ast.py	/^	def __init__(self, line_num, position_in_line, token_name, child_num, token_type, content):$/;"	m	class:ASTreeNode
+__init__	ast.py	/^	def __init__(self, on_condition):$/;"	m	class:OnConditionParser
+__init__	ast.py	/^	def __init__(self, orderby):$/;"	m	class:OrderbyParser
+__init__	ast.py	/^	def __init__(self, select_list):$/;"	m	class:SelectListParser
+__init__	ast.py	/^	def __init__(self, where_condition):$/;"	m	class:WhereConditionParser
+__init__	expression.py	/^	def __init__(self):$/;"	m	class:ExpressionParser
+__init__	expression.py	/^    def __init__(self):$/;"	m	class:Expression
+__init__	expression.py	/^    def __init__(self):$/;"	m	class:Function
+__init__	node.py	/^	def __init__(self):$/;"	m	class:JoinNode
+__init__	node.py	/^	def __init__(self):$/;"	m	class:JoinNodeList
+__init__	node.py	/^	def __init__(self):$/;"	m	class:OrderbyNode
+__init__	node.py	/^	def __init__(self):$/;"	m	class:RootSelectNode
+__init__	node.py	/^    def __init__(self):$/;"	m	class:GroupbyNode
+__init__	node.py	/^    def __init__(self):$/;"	m	class:Node
+__init__	node.py	/^    def __init__(self):$/;"	m	class:SPNode
+__init__	node.py	/^    def __init__(self):$/;"	m	class:TableNode
+__init__	schema.py	/^	def __init__(self, column_name, column_type):$/;"	m	class:ColumnSchema
+__init__	schema.py	/^	def __init__(self, node):$/;"	m	class:SchemaChecker
+__init__	schema.py	/^	def __init__(self, table_name, column_list):$/;"	m	class:TableSchema
+addToSelectList	expression.py	/^	def addToSelectList(self, node, new_dic, new_list):$/;"	m	class:Function
+adjustIndex	node.py	/^	def adjustIndex(self, exp_list, table_name):$/;"	m	class:JoinNode
+agg_func_list	global.py	/^agg_func_list = ["SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT"]$/;"	v
+appendChild	ast.py	/^	def appendChild(self, child):$/;"	m	class:ASTreeNode
+astToQueryPlan	ast.py	/^def astToQueryPlan(schema, file):$/;"	f
+booleanFilter	expression.py	/^	def booleanFilter(self, node, rm_flag):$/;"	m	class:Function
+checkGroupby	schema.py	/^	def checkGroupby(self):$/;"	m	class:SchemaChecker
+checkHaving	schema.py	/^	def checkHaving(self):$/;"	m	class:SchemaChecker
+checkJoin	schema.py	/^	def checkJoin(self):$/;"	m	class:SchemaChecker
+checkOrderby	schema.py	/^	def checkOrderby(self):$/;"	m	class:SchemaChecker
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:GroupbyNode
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:JoinNode
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:Node
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:OrderbyNode
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:SPNode
+checkSchema	node.py	/^	def checkSchema(self):$/;"	m	class:TableNode
+checkSelectList	schema.py	/^	def checkSelectList(self):$/;"	m	class:SchemaChecker
+checkWhere	schema.py	/^	def checkWhere(self):$/;"	m	class:SchemaChecker
+child	node.py	/^	child = None$/;"	v	class:OrderbyNode
+child	node.py	/^    child = None$/;"	v	class:GroupbyNode
+child	node.py	/^    child = None$/;"	v	class:SPNode
+child_list	ast.py	/^	child_list = None$/;"	v	class:ASTreeNode
+child_num	ast.py	/^	child_num = 0$/;"	v	class:ASTreeNode
+children_list	node.py	/^	children_list = None$/;"	v	class:JoinNodeList
+columnFilter	node.py	/^	def columnFilter(self):$/;"	m	class:GroupbyNode
+columnFilter	node.py	/^	def columnFilter(self):$/;"	m	class:JoinNode
+columnFilter	node.py	/^	def columnFilter(self):$/;"	m	class:Node
+columnFilter	node.py	/^	def columnFilter(self):$/;"	m	class:OrderbyNode
+columnFilter	node.py	/^	def columnFilter(self):$/;"	m	class:SPNode
+column_list	schema.py	/^	column_list = None$/;"	v	class:TableSchema
+column_name	expression.py	/^    column_name = None$/;"	v	class:Column
+column_name	schema.py	/^	column_name = None$/;"	v	class:ColumnSchema
+column_name_list	schema.py	/^	column_name_list = None$/;"	v	class:TableSchema
+column_others	schema.py	/^	column_others = None$/;"	v	class:ColumnSchema
+column_type	expression.py	/^    column_type = None$/;"	v	class:Column
+column_type	schema.py	/^	column_type = None$/;"	v	class:ColumnSchema
+composite	node.py	/^	composite = None$/;"	v	class:OrderbyNode
+composite	node.py	/^    composite = None$/;"	v	class:GroupbyNode
+composite	node.py	/^    composite = None$/;"	v	class:SPNode
+composite	node.py	/^    composite = None$/;"	v	class:TableNode
+const_name	expression.py	/^    const_name = None	$/;"	v	class:Constant
+const_type	expression.py	/^    const_type = None$/;"	v	class:Constant
+content	ast.py	/^	content = None$/;"	v	class:ASTreeNode
+convertExpListToStr	ast.py	/^	def convertExpListToStr(self, exp):$/;"	m	class:ASTreeNodeParser
+convertExpListToStr	ast.py	/^	def convertExpListToStr(self, exp):$/;"	m	class:WhereConditionParser
+convertExpListToStr	ast.py	/^	def convertExpListToStr(self, exp_list):$/;"	m	class:GroupbyParser
+convertExpListToStr	ast.py	/^	def convertExpListToStr(self, exp_list):$/;"	m	class:SelectListParser
+convertFromList	node.py	/^	def convertFromList(self, input_list):$/;"	m	class:RootSelectNode
+convertItemListToExpList	ast.py	/^	def convertItemListToExpList(self, groupby):$/;"	m	class:GroupbyParser
+convertItemListToExpList	ast.py	/^	def convertItemListToExpList(self, item_list):$/;"	m	class:ASTreeNodeParser
+convertItemListToExpList	ast.py	/^	def convertItemListToExpList(self, orderby):$/;"	m	class:OrderbyParser
+convertItemListToExpList	ast.py	/^	def convertItemListToExpList(self, select_list):$/;"	m	class:SelectListParser
+convertItemListToExpList	ast.py	/^	def convertItemListToExpList(self, where_condition):$/;"	m	class:WhereConditionParser
+convertItemListToStr	ast.py	/^	def convertItemListToStr(self, groupby):$/;"	m	class:GroupbyParser
+convertItemListToStr	ast.py	/^	def convertItemListToStr(self, item_list):$/;"	m	class:ASTreeNodeParser
+convertItemListToStr	ast.py	/^	def convertItemListToStr(self, on_condition):$/;"	m	class:OnConditionParser
+convertItemListToStr	ast.py	/^	def convertItemListToStr(self, select_list):$/;"	m	class:SelectListParser
+convertItemListToStr	ast.py	/^	def convertItemListToStr(self, where_condition):$/;"	m	class:WhereConditionParser
+convertItemToExp	ast.py	/^	def convertItemToExp(self, item):$/;"	m	class:ASTreeNodeParser
+convertItemToExpList	ast.py	/^	def convertItemToExpList(self, item):$/;"	m	class:ASTreeNodeParser
+convertItemToStr	ast.py	/^	def convertItemToStr(self, item):$/;"	m	class:ASTreeNodeParser
+convertItemToStr	ast.py	/^	def convertItemToStr(self, item):$/;"	m	class:OnConditionParser
+convertItemToStr	ast.py	/^	def convertItemToStr(self, item):$/;"	m	class:WhereConditionParser
+converted_exp_str	ast.py	/^	converted_exp_str = None$/;"	v	class:ASTreeNodeParser
+converted_from_list	node.py	/^	converted_from_list = None$/;"	v	class:RootSelectNode
+converted_str	ast.py	/^	converted_str = None$/;"	v	class:ASTreeNodeParser
+evaluate	expression.py	/^	def evaluate(self):$/;"	m	class:Expression
+evaluate	expression.py	/^	def evaluate(self):$/;"	m	class:Function
+exp_alias_dic	ast.py	/^	exp_alias_dic = None$/;"	v	class:SelectListParser
+exp_list	ast.py	/^	exp_list = None$/;"	v	class:SelectListParser
+exp_type	expression.py	/^    exp_type = None #expression type coule be Function, Constant, Column, etc.$/;"	v	class:Expression
+fileToRoot	ast.py	/^def fileToRoot(file):$/;"	f
+flag	node.py	/^			flag = False$/;"	v	class:Node
+from_list	node.py	/^	from_list = None$/;"	v	class:RootSelectNode
+func_name	expression.py	/^    func_name = None$/;"	v	class:Function
+func_obj	expression.py	/^	func_obj = None$/;"	v	class:Function
+gb	node.py	/^		gb = GroupbyNode()$/;"	v	class:Node
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:GroupbyNode
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:JoinNode
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:Node
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:OrderbyNode
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:SPNode
+genColumnIndex	node.py	/^	def genColumnIndex(self):$/;"	m	class:TableNode
+genGroupby	node.py	/^	def genGroupby(self):$/;"	m	class:JoinNodeList
+genGroupby	node.py	/^    def genGroupby(self):$/;"	m	class:Node
+genGroupby	node.py	/^    def genGroupby(self):$/;"	m	class:SPNode
+genIndex	expression.py	/^	def genIndex(self, node):$/;"	m	class:Column
+genIndex	expression.py	/^	def genIndex(self, node):$/;"	m	class:Expression
+genIndex	expression.py	/^	def genIndex(self, node):$/;"	m	class:Function
+genOrderby	node.py	/^	def genOrderby(self):$/;"	m	class:JoinNodeList
+genOrderby	node.py	/^	def genOrderby(self):$/;"	m	class:OrderbyNode
+genOrderby	node.py	/^    def genOrderby(self):$/;"	m	class:Node
+genOrderby	node.py	/^    def genOrderby(self):$/;"	m	class:SPNode
+genProjectList	node.py	/^	def genProjectList(self):$/;"	m	class:GroupbyNode
+genProjectList	node.py	/^	def genProjectList(self):$/;"	m	class:JoinNode
+genProjectList	node.py	/^	def genProjectList(self):$/;"	m	class:Node
+genProjectList	node.py	/^	def genProjectList(self):$/;"	m	class:OrderbyNode
+genProjectList	node.py	/^	def genProjectList(self):$/;"	m	class:SPNode
+genTableName	expression.py	/^	def genTableName(self, node):$/;"	m	class:Column
+genTableName	expression.py	/^	def genTableName(self, node):$/;"	m	class:Expression
+genTableName	expression.py	/^	def genTableName(self, node):$/;"	m	class:Function
+genTableName	node.py	/^	def genTableName(self):$/;"	m	class:GroupbyNode
+genTableName	node.py	/^	def genTableName(self):$/;"	m	class:JoinNode
+genTableName	node.py	/^	def genTableName(self):$/;"	m	class:Node
+genTableName	node.py	/^	def genTableName(self):$/;"	m	class:OrderbyNode
+genTableName	node.py	/^	def genTableName(self):$/;"	m	class:SPNode
+getColumnByName	schema.py	/^	def getColumnByName(self, name):$/;"	m	class:TableSchema
+getColumnIndexByName	schema.py	/^	def getColumnIndexByName(self, name):$/;"	m	class:TableSchema
+getGroupbyFuncName	expression.py	/^	def getGroupbyFuncName(self):$/;"	m	class:Function
+getPara	expression.py	/^	def getPara(self, col_list):$/;"	m	class:Function
+getPrimaryKey	node.py	/^	def getPrimaryKey(self):$/;"	m	class:JoinNode
+getValueType	expression.py	/^	def getValueType(self):$/;"	m	class:Function
+global_table_dic	global.py	/^global_table_dic = {}$/;"	v
+groupbyWhereFilter	expression.py	/^	def groupbyWhereFilter(self):$/;"	m	class:Function
+groupby_clause	node.py	/^    groupby_clause = None$/;"	v	class:Node
+groupby_list	ast.py	/^	groupby_list = None$/;"	v	class:GroupbyParser
+hasGroupbyFunc	expression.py	/^	def hasGroupbyFunc():$/;"	m	class:Column
+hasGroupbyFunc	expression.py	/^	def hasGroupbyFunc(self):$/;"	m	class:Expression
+hasGroupbyFunc	expression.py	/^	def hasGroupbyFunc(self):$/;"	m	class:Function
+having_clause	node.py	/^    having_clause = None$/;"	v	class:Node
+in_table_alias_dic	node.py	/^    in_table_alias_dic = {}$/;"	v	class:SPNode
+in_table_list	node.py	/^    in_table_list = []$/;"	v	class:SPNode
+isColumnInTable	global.py	/^def isColumnInTable(column_name, table_name):$/;"	f
+isColumnUniqueInTable	global.py	/^def isColumnUniqueInTable(column_name, table_name):$/;"	f
+is_explicit	node.py	/^	is_explicit = None$/;"	v	class:JoinNode
+is_explicit	node.py	/^	is_explicit = None$/;"	v	class:JoinNodeList
+join_condition	node.py	/^	join_condition = None$/;"	v	class:JoinNode
+join_info	node.py	/^	join_info = None$/;"	v	class:JoinNodeList
+join_type	node.py	/^	join_type = None$/;"	v	class:JoinNode
+left_child	node.py	/^	left_child = None$/;"	v	class:JoinNode
+left_composite	node.py	/^	left_composite = None$/;"	v	class:JoinNode
+line_num	ast.py	/^	line_num = 0$/;"	v	class:ASTreeNode
+node	schema.py	/^	node = None$/;"	v	class:SchemaChecker
+nodeToAST	ast.py	/^def nodeToAST(node):$/;"	f
+on_condition_exp	ast.py	/^	on_condition_exp = None$/;"	v	class:OnConditionParser
+orderby_clause	node.py	/^    orderby_clause = None$/;"	v	class:Node
+orderby_exp_list	ast.py	/^	orderby_exp_list = None$/;"	v	class:OrderbyParser
+orderby_type_list	ast.py	/^	orderby_type_list = None$/;"	v	class:OrderbyParser
+output	node.py	/^	output = None$/;"	v	class:OrderbyNode
+para_list	expression.py	/^    para_list = []$/;"	v	class:Function
+parent	node.py	/^	parent = None$/;"	v	class:JoinNode
+parent	node.py	/^	parent = None$/;"	v	class:OrderbyNode
+parent	node.py	/^    parent = None$/;"	v	class:GroupbyNode
+parent	node.py	/^    parent = None$/;"	v	class:SPNode
+parent	node.py	/^    parent = None$/;"	v	class:TableNode
+parse	expression.py	/^	def parse(self, token_list):$/;"	m	class:ExpressionParser
+position_in_line	ast.py	/^	position_in_line = 0$/;"	v	class:ASTreeNode
+postProcess	node.py	/^	def postProcess(self):$/;"	m	class:Node
+predicatePushdown	node.py	/^	def predicatePushdown(self):$/;"	m	class:GroupbyNode
+predicatePushdown	node.py	/^	def predicatePushdown(self):$/;"	m	class:JoinNode
+predicatePushdown	node.py	/^	def predicatePushdown(self):$/;"	m	class:Node
+predicatePushdown	node.py	/^	def predicatePushdown(self):$/;"	m	class:OrderbyNode
+predicatePushdown	node.py	/^	def predicatePushdown(self):$/;"	m	class:SPNode
+processFromList	node.py	/^	def processFromList(self):$/;"	m	class:RootSelectNode
+processSchemaFile	ast.py	/^def processSchemaFile(schema):$/;"	f
+processSelectList	node.py	/^	def processSelectList(self):$/;"	m	class:JoinNode
+processSelectStar	node.py	/^	def processSelectStar(self):$/;"	m	class:GroupbyNode
+processSelectStar	node.py	/^	def processSelectStar(self):$/;"	m	class:Node
+processSelectStar	node.py	/^	def processSelectStar(self):$/;"	m	class:OrderbyNode
+processSelectStar	node.py	/^	def processSelectStar(self):$/;"	m	class:SPNode
+real_struct	ast.py	/^	real_struct = None$/;"	v	class:ASTreeNodeParser
+removePara	expression.py	/^	def removePara(self):$/;"	m	class:Function
+replace	expression.py	/^	def replace(self, old, new):$/;"	m	class:Function
+right_child	node.py	/^	right_child = None$/;"	v	class:JoinNode
+right_composite	node.py	/^	right_composite = None$/;"	v	class:JoinNode
+searchColumn	global.py	/^def searchColumn(column_name):$/;"	f
+searchTable	global.py	/^def searchTable(table_name):$/;"	f
+select_list	node.py	/^    select_list = None$/;"	v	class:Node
+setComposite	node.py	/^	def setComposite(self, composite, node):$/;"	m	class:JoinNode
+setOthers	schema.py	/^	def setOthers(self, others):$/;"	m	class:ColumnSchema
+source	ast.py	/^	source = None$/;"	v	class:ASTreeNodeParser
+source	node.py	/^    source = None$/;"	v	class:Node
+table_alias	node.py	/^    table_alias = None$/;"	v	class:SPNode
+table_alias	node.py	/^    table_alias = None$/;"	v	class:TableNode
+table_alias_dic	node.py	/^    table_alias_dic = {}$/;"	v	class:Node
+table_list	node.py	/^    table_list = []$/;"	v	class:Node
+table_name	expression.py	/^    table_name = None$/;"	v	class:Column
+table_name	node.py	/^    table_name = None$/;"	v	class:TableNode
+table_name	schema.py	/^	table_name = None$/;"	v	class:TableSchema
+table_schema	schema.py	/^	table_schema = None$/;"	v	class:ColumnSchema
+toBinJoinTree	node.py	/^	def toBinJoinTree(self):$/;"	m	class:OrderbyNode
+toBinaryJoinTree	node.py	/^	def toBinaryJoinTree(self):$/;"	m	class:JoinNodeList
+toBinaryJoinTree	node.py	/^    def toBinaryJoinTree(self):$/;"	m	class:GroupbyNode
+toBinaryJoinTree	node.py	/^    def toBinaryJoinTree(self):$/;"	m	class:Node
+toBinaryJoinTree	node.py	/^    def toBinaryJoinTree(self):$/;"	m	class:SPNode
+toInitialPlanTree	node.py	/^	def toInitialPlanTree(self, input):$/;"	m	class:RootSelectNode
+toInitialQueryPlanTree	node.py	/^	def toInitialQueryPlanTree(self):$/;"	m	class:RootSelectNode
+toPlanTree	ast.py	/^	def toPlanTree(self):$/;"	m	class:ASTreeNode
+toRootSelectNode	ast.py	/^	def toRootSelectNode(self):$/;"	m	class:ASTreeNode
+token_name	ast.py	/^	token_name = ""$/;"	v	class:ASTreeNode
+token_type	ast.py	/^	token_type = 0$/;"	v	class:ASTreeNode
+where_condition	node.py	/^    where_condition = None$/;"	v	class:Node
+where_condition_exp	ast.py	/^	where_condition_exp = None$/;"	v	class:WhereConditionParser
