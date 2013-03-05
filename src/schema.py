@@ -21,63 +21,63 @@ import copy
 import ast
 
 class ColumnSchema:
-	column_name = None
-	column_type = None
-	column_others = None
-	table_schema = None
+    column_name = None
+    column_type = None
+    column_others = None
+    table_schema = None
+
+    def __init__(self, column_name, column_type):
+	self.column_name = column_name
+	self.column_type = column_type
 	
-	def __init__(self, column_name, column_type):
-		self.column_name = column_name
-		self.column_type = column_type
-		
-	def setOthers(self, others):
-		self.column_others = others
+    def setOthers(self, others):
+	self.column_others = others
 		
 class TableSchema:
-	table_name = None
-	column_list = None
-	column_name_list = None
+    table_name = None
+    column_list = None
+    column_name_list = None
+
+    def __init__(self, table_name, column_list):
+	self.table_name = table_name
+	self.column_list = column_list
 	
-	def __init__(self, table_name, column_list):
-		self.table_name = table_name
-		self.column_list = column_list
-		
-		for item in column_list:
-			item.table_schema = self
-		
-		self.column_name_list = []
-		for item in column_list:
-			self.column_name_list.append(item.column_name)
+	for item in column_list:
+	    item.table_schema = self
 	
-	def getColumnIndexByName(self, name):
-		return self.column_name_list.index(name)
-	
-	def getColumnByName(self, name):
-		index = self.getColumnIndexByName(name)
-		if index != -1:
-			return column_list[index]
-		return None
+	self.column_name_list = []
+	for item in column_list:
+	    self.column_name_list.append(item.column_name)
+
+    def getColumnIndexByName(self, name):
+	return self.column_name_list.index(name)
+
+    def getColumnByName(self, name):
+	index = self.getColumnIndexByName(name)
+	if index != -1:
+	    return column_list[index]
+	return None
 			
 class SchemaChecker:
-	node = None
-	
-	def __init__(self, node):
-		self.node = node
-	
-	def checkSelectList(self):
-		# TODO
-		
-	def checkGroupby(self):
-		# TODO
-	
-	def checkOrderby(self):
-		# TODO
-		
-	def checkHaving(self):
-		# TODO
+    node = None
 
-	def checkWhere(self):
-		# TODO
+    def __init__(self, node):
+	self.node = node
 
-	def checkJoin(self):
-		# TODO
+    def checkSelectList(self):
+	# TODO
+	
+    def checkGroupby(self):
+	# TODO
+
+    def checkOrderby(self):
+	# TODO
+	
+    def checkHaving(self):
+	# TODO
+
+    def checkWhere(self):
+	# TODO
+
+    def checkJoin(self):
+	# TODO

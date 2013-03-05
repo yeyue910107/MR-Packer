@@ -19,27 +19,29 @@ global_table_dic = {}
 agg_func_list = ["SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT"]
 
 def isColumnUniqueInTable(column_name, table_name):
-    if table_name not in global_table_dic:
-	return False
-
-    tmp_list = filter(lambda x:x == column_name, global_table_dic[table_name].column_list)
-    return (len(tmp_list) == 1)
+	if table_name not in global_table_dic:
+		return False
+	
+	tmp_list = filter(lambda x:x == column_name, 
+					global_table_dic[table_name].column_list)
+	return (len(tmp_list) == 1)
 	
 def isColumnInTable(column_name, table_name):
-    return (table_name in global_table_dic.keys()) and (column_name in [x.column_name for x in global_table_dic[table_name].column_list])
+	return (table_name in global_table_dic.keys()) and 
+			(column_name in [x.column_name for x in global_table_dic[table_name].column_list])
 
 def searchTable(table_name):
-    if table_name in global_table_dic.keys():
-	return global_table_dic[table_name]
-    return None
+	if table_name in global_table_dic.keys():
+		return global_table_dic[table_name]
+	return None
 
 def searchColumn(column_name):
-    ret_list = []
-    for key in global_table_dic.keys():
-	for column in global_table_dic[key].column_list:
-	    if column_name == "*" or column_name == column.column_name:
-		tmp = copy.deepcopy(column)
-		ret_list.append(tmp)
-
-    return ret_list
+	ret_list = []
+	for key in global_table_dic.keys():
+		for column in global_table_dic[key].column_list:
+			if column_name == "*" or column_name == column.column_name:
+				tmp = copy.deepcopy(column)
+				ret_list.append(tmp)
+	
+	return ret_list
 	

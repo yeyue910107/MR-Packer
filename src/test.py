@@ -18,4 +18,8 @@ import ast
 import node
 
 if __name__ == "__main__":
-    astToQueryPlan()
+    _file = open("../test/17.sql", "r")
+    schema = open("../test/tpch.schema", "r")
+    astToQueryPlan(schema, _file)
+    _file.close()
+    schema.close()
