@@ -16,7 +16,6 @@
 """
 import expression
 import util
-import node
 import copy
 
 class ColumnSchema:
@@ -48,12 +47,14 @@ class TableSchema:
 	    self.column_name_list.append(item.column_name)
 
     def getColumnIndexByName(self, name):
+	#DEBUG
+	print self.table_name, self.column_name_list
 	return self.column_name_list.index(name)
 
     def getColumnByName(self, name):
 	index = self.getColumnIndexByName(name)
 	if index != -1:
-	    return column_list[index]
+	    return self.column_list[index]
 	return None
 			
 class SchemaChecker:
@@ -64,24 +65,24 @@ class SchemaChecker:
 
     def checkSelectList(self):
 	# TODO
-	pass
+	return True
 	
     def checkGroupby(self):
 	# TODO
-	pass
+	return True
 
     def checkOrderby(self):
 	# TODO
-	pass
+	return True
 	
     def checkHaving(self):
 	# TODO
-	pass
+	return True
 
     def checkWhere(self):
 	# TODO
-	pass
+	return True
 
     def checkJoin(self):
 	# TODO
-	pass
+	return True

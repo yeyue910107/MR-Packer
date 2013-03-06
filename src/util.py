@@ -14,6 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+import copy
 
 global_table_dic = {}
 agg_func_list = ["SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT"]

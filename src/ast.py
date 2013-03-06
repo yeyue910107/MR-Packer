@@ -14,10 +14,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-from expression import *
-from util import *
-from node import *
-from schema import *
+import expression
+import util
+import node
+import schema
 import copy
 from xml.dom import minidom, Node
 
@@ -36,14 +36,14 @@ class ASTreeNode:
 	self.token_name = token_name
 	self.child_num = child_num
 	self.token_type = token_type
-	self.conteng = content
+	self.content = content
 	self.child_list = []
 	
     def appendChild(self, child):
 	self.child_list.append(child)
 	
     def toRootSelectNode(self):
-	rs_node = RootSelectNode()
+	rs_node = node.RootSelectNode()
 	
 	if self.token_name != "SELECT":
 	    # TODO error
@@ -67,7 +67,7 @@ class ASTreeNode:
 		    if child_child.token_name != "SELECT":
 			tmp_list.append(child_child)
 		    else:
-			tmp_list.append(astToRootSelectNode(child_child))
+			tmp_list.append(child_child.toRootSelectNode())
 		rs_node.from_list = tmp_list
 	
 	return rs_node
@@ -117,6 +117,8 @@ class SelectListParser(ASTreeNodeParser):
 	self.converted_str = self.convertItemListToStr(self.source)
 	self.exp_alias_dic = {}
 	self.exp_list = self.convertItemListToExpList(self.source)
+	#DEBUG
+	print self.exp_list, "SELECT_LIST", self.exp_alias_dic
 	self.converted_exp_str = self.convertExpListToStr(self.exp_list)
 	self.real_struct = None
 
@@ -126,7 +128,7 @@ class SelectListParser(ASTreeNodeParser):
 	if select_list is None:
 	    return ret_exp_list
 	
-	exp_parser = ExpressionParser()
+	exp_parser = expression.ExpressionParser()
 	for child in select_list.child_list:
 	    if child.token_name == "SELECT_COLUMN":
 		input_exp_list = []
@@ -148,23 +150,22 @@ class SelectListParser(ASTreeNodeParser):
 			fin_flag = False
 		    if fin_flag == True:
 			input_exp_list.append(token)
-			
 		exp = exp_parser.parse(input_exp_list)
 		
 		# setup alias
-		
+		#DEBUG
+		print exp, as_alias
 		# explicit: a AS b
 		if as_alias is not None:
 		    self.exp_alias_dic[exp] = as_alias
 		
 		# implicit: a, or a.b
-		elif isinstance(exp, Column):
+		elif isinstance(exp, expression.Column):
 		    self.exp_alias_dic[exp] = exp.column_name
 		
 		# no alias
 		else:
 		    self.exp_alias_dic[exp] = None
-		
 		ret_exp_list.append(exp)
 	return ret_exp_list
 			
@@ -204,7 +205,7 @@ class OnConditionParser(ASTreeNodeParser):
 	self.real_struct = None
 	self.converted_str = self.convertItemListToStr(self.source)
 	where_condition_parser = WhereConditionParser()
-	self.on_condition_exp = where_condition_parser.convertItemListToExp(self.source)
+	self.on_condition_exp = where_condition_parser.convertItemListToExpList(self.source)
 	self.converted_exp_str = where_condition_parser.convertExpListToStr(self.on_condition_exp)
 
     def convertItemToStr(self, item):
@@ -243,7 +244,7 @@ class WhereConditionParser(ASTreeNodeParser):
 	self.source = where_condition
 	self.real_struct = None
 	self.converted_str = self.convertItemListToStr(self.source)
-	self.where_condition_exp = self.convertItemListToExp(self.source[1:])
+	self.where_condition_exp = self.convertItemListToExpList(self.source)
 	self.converted_exp_str = self.convertExpListToStr(self.where_condition_exp)
 
     def convertItemToStr(self, item):
@@ -283,7 +284,10 @@ class WhereConditionParser(ASTreeNodeParser):
     def convertItemListToExpList(self, where_condition):
 	if where_condition is None:
 	    return None
-	tmp_list = where_condition.child_list[1:]
+	if isinstance(where_condition, ASTreeNode):
+	    tmp_list = where_condition.child_list[1:]
+	else:
+	    tmp_list = where_condition
 	if len(tmp_list) == 1:
 	    item = tmp_list[0]
 	    if item.token_name != "COND_OR" and item.token_name != "COND_AND":
@@ -296,7 +300,7 @@ class WhereConditionParser(ASTreeNodeParser):
 		exp_list = []
 		for child in child_list:
 		    exp_list.append(self.convertItemListToExpList([child]))
-		return Function(func_name, exp_list)
+		return expression.Function(func_name, exp_list)
 	    elif first_child.token_name == "RESERVED" and (first_child.content == "AND" or first_child.content == "OR"):
 		return self.convertItemListToExpList(child_list[1:])
 	    else:
@@ -307,14 +311,14 @@ class WhereConditionParser(ASTreeNodeParser):
 	    if len(tmp_list) == 3:
 		if tmp_list[0].token_name == "LPAREN" and tmp_list[2].token_name == "RPAREN" and (tmp_list[1].token_name == "COND_AND" or tmp_list[1].token_name == "COND_OR"):
 		    return self.convertItemListToExpList([tmp_list[1]])
-	    exp_parser = ExpressionParser()
+	    exp_parser = expression.ExpressionParser()
 	    token_list = []
 	    for child in tmp_list:
 		token = {}
 		token["name"] = child.token_name
 		token["content"] = child.content
 		token_list.append(token)
-	    return exp_parser.convertTokenListToExp(token_list)
+	    return exp_parser.parse(token_list)
 
     def convertExpListToStr(self, exp):
 	if exp is None:
@@ -363,9 +367,9 @@ class GroupbyParser(ASTreeNodeParser):
 	groupby_token_list.append(groupby_item)
 	
 	ret_exp_list = []
-	exp_parser = ExpressionParser()
+	exp_parser = expression.ExpressionParser()
 	for item in groupby_token_list:
-	    ret_exp_list.append(exp_parser.convertTokenListToExp(item))
+	    ret_exp_list.append(exp_parser.parse(item))
 	
 	return ret_exp_list
 	
@@ -424,9 +428,9 @@ class OrderbyParser(ASTreeNodeParser):
 	self.orderby_type_list = tmp_orderby_type_list
 	return ret_exp_list
 
-def processSchemaFile(schema):
+def processSchemaFile(_schema):
 	global global_table_dic
-	file = open(schema)
+	file = open(_schema)
 	text = file.readlines()
 	file.close()
 	
@@ -442,10 +446,10 @@ def processSchemaFile(schema):
 		    if col_type not in ["INTEGER", "DECIMAL", "TEXT", "DATE"]:
 			# TODO error
                         pass
-		    column = ColumnSchema(col_name, col_type)
+		    column = schema.ColumnSchema(col_name, col_type)
 		    tmp_list.append(column)
-	    table = TableSchema(table_name, tmp_list)
-	    global_table_dic[table_name] = table
+	    table = schema.TableSchema(table_name, tmp_list)
+	    util.global_table_dic[table_name] = table
 
 def fileToRoot(file):
     doc = minidom.parse(file)
@@ -469,8 +473,7 @@ def nodeToAST(node):
 		
 	for child in node.childNodes:
 	    if child.nodeName == "content":
-		content = child.childNodes[0].nodeValue
-	
+		content = child.childNodes[0].nodeValue.upper()
 	ast = ASTreeNode(line_num, position_in_line, token_name, child_num, token_type, content)
 	for child in node.childNodes:
 	    if child.nodeName != "content":

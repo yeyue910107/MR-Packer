@@ -15,6 +15,8 @@
    limitations under the License.
 """
 
+import util
+
 class Expression():
     exp_type = None #expression type coule be Function, Constant, Column, etc.
 
@@ -38,11 +40,17 @@ class Function(Expression):
     para_list = []
     func_obj = None
 
-    def __init__(self):
-        pass
+    def __init__(self, func_name, para_list):
+        self.func_name = func_name
+	self.para_list = para_list
     
     def evaluate(self):
-	pass
+	ret = ""
+	for para in self.para_list:
+	    tmp = para.evaluate()
+	    ret = ret + str(tmp) + ","
+        ret = ret[:-1]
+        return self.func_name + "(" + ret + ")"
 	
     def getValueType(self):
 	return "DECIMAL"
@@ -58,16 +66,16 @@ class Function(Expression):
 
     def genTableName(self, node):
 	col_list = []
-	getFuncPara(self, col_list)
+	self.getPara(col_list)
 	for item in col_list:
-	    getTableName(item, node)
+	    item.genTableName(node)
 	
     def getPara(self, col_list):
-	for para in self.parameter_list:
+	for para in self.para_list:
 	    if isinstance(para, Column):
 		col_list.append(para)
 	    elif isinstance(para, Function):
-		getPara(para, col_list)
+		para.getPara(col_list)
 
     def genIndex(self, node):
 	para_list = self.para_list
@@ -113,7 +121,7 @@ class Function(Expression):
 				
     def hasGroupbyFunc(self):
 	flag = False
-	if self.func_name in agg_func_list:
+	if self.func_name in util.agg_func_list:
 	    return True
 	for para in self.para_list:
 	    flag |= para.hasGroupbyFunc()
@@ -122,7 +130,7 @@ class Function(Expression):
     def getGroupbyFuncName(self):
 	if not isinstance(self, Function):
 	    return None
-	if self.func_name in agg_func_list:
+	if self.func_name in util.agg_func_list:
 	    return self.func_name
 	for para in self.para_list:
 	    func_name = para.getGroupbyFuncName()
@@ -145,7 +153,7 @@ class Function(Expression):
 		if exp.func_name == "OR":
 		    tmp_exp = exp.booleanFilter(node, False)
 		else:
-		    tmp_exp = exp.booleanFilter(node, rm_bool)
+		    tmp_exp = exp.booleanFilter(node, rm_flag)
 		if self.func_name == "OR" and tmp_exp is None:
 		    flag = False
 		if tmp_exp is not None:
@@ -169,7 +177,7 @@ class Function(Expression):
 		tmp_flag = False
 		if isinstance(exp, Column):
 		    for table in node.table_list:
-			if table == exp.table_name and isColumnInTable(exp.column_name, exp):
+			if table == exp.table_name and util.isColumnInTable(exp.column_name, exp):
 			    tmp_flag = True
 			    break
 		    for key in node.table_alias_dic.keys():
@@ -223,12 +231,21 @@ class Column(Expression):
     column_name = None
     table_name = None
 	
-    def __init__(self):
-	pass
+    def __init__(self, table_name, column_name):
+	self.table_name = table_name
+	self.column_name = column_name
+
+    def evaluate(self):
+	if self.table_name == "":
+	    return "UNKNOWN." + self.column_name
+	return self.table_name + "." + self.column_name
 
     def genTableName(self, node):
 	if self.table_name != "":
-	    if searchTable(self.table_name) is None and searchTable(self.table_alias_dic[self.table_name]) is None:
+	    table = util.searchTable(self.table_name)
+	    if table is None:
+		table = util.searchTable(self.table_alias_dic[self.table_name])
+	    if table is None:
 		# TODO error
 		pass
 	    self.column_type = table.getColumnByName(self.column_name).column_type
@@ -236,7 +253,7 @@ class Column(Expression):
 	
 	if self.column_name == "*":
 	    return
-	col_list = searchColumn(self.column_name)
+	col_list = util.searchColumn(self.column_name)
 	for col in col_list:
 	    if col.table_schema.table_name in node.table_list:
 		self.table_name = col.table_schema.table_name
@@ -280,13 +297,23 @@ class Column(Expression):
 	    new_exp.column_name = self.column_type
 	return new_exp
 	
-    def hasGroupbyFunc():
-	pass
+    def hasGroupbyFunc(self):
+	return False
 		
 class Constant(Expression):
     const_type = None
-    const_name = None	
-	
+    const_value = None	
+
+    def __init__(self, const_type, const_value):
+	self.const_type = const_type
+	self.const_value = const_value
+
+    def evaluate(self):
+	return self.const_value
+
+    def hasGroupbyFunc(self):
+	return False
+
 class ExpressionParser:
     def __init__(self):
 	pass
@@ -330,7 +357,6 @@ class ExpressionParser:
 	is_index = -1
 	partition_index = -1
 	partition_type = None
-	
 	for i in range(0, length):
 	    token = token_list[i]
 	    t_content = token["content"]
@@ -401,7 +427,7 @@ class ExpressionParser:
 	    t_name = token["name"]
 	    if t_name == "LPAREN":
 		sub_level += 1
-	    elif t_content == "RPAREN":
+	    elif t_name == "RPAREN":
 		sub_level -= 1
 	
 	    if sub_level == 0:
@@ -409,7 +435,7 @@ class ExpressionParser:
 		    mul_index = i
 		elif t_name == "DIVIDE":
 		    div_index = i
-				
+	
 	if mul_index > 0:
 	    before_list = token_list[:mul_index]
 	    after_list = token_list[(mul_index + 1):]
@@ -426,16 +452,16 @@ class ExpressionParser:
 	# func() or ()
 	first = token_list[0]
 	t_name = first["name"]
-	if t_name == "ID" or t_name in ["SUM", "AVG", "MAX", "MIN", "COUNT"]:
+	if t_name == "ID" or t_name in ["'SUM'", "'AVG'", "'MAX'", "'MIN'", "'COUNT'"]:
 	    func_name = first["content"]
 	    second = token_list[1]
 	    last = token_list[-1]
-	
 	    if second["name"] != "LPAREN" or last["name"] != "RPAREN":
 		# TODO error
 		pass
 	    sub_level = 0
 	    para_list = []
+	    tmp_para_list = []
 	    for i in range(2, length - 1):
 		token = token_list[i]
 		para_list.append(token)
@@ -453,7 +479,7 @@ class ExpressionParser:
 	    tmp_para_list.append(para_list)
 	
 	    exp_list = []
-	    for para in para_list:
+	    for para in tmp_para_list:
 		exp_list.append(self.parse(para))
 	    return Function(func_name, exp_list)
 		
