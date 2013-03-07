@@ -24,4 +24,3 @@ if __name__ == "__main__":
     schema = "../test/tpch.schema"
     ast.astToQueryPlan(schema, _file)
     _file.close()
-    schema.close()

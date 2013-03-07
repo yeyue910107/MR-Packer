@@ -160,6 +160,31 @@ class Node(object):
     def genColumnIndex(self):
 	pass
 		
+    def __genSelectIndex__(self):
+	if self.select_list is None:
+	    return
+	new_select_dic = {}
+	new_exp_list = []
+	exp_dic = self.select_list.exp_alias_dic
+	exp_list = self.select_list.exp_list
+	
+	for exp in exp_list:
+	    new_exp = exp.genIndex(self)
+	    new_exp_list.append(new_exp)
+	    if isinstance(exp, expression.Column):
+		new_select_dic[new_exp] = self.select_list.exp_alias_dic[exp]
+	    else:
+		new_select_dic[new_exp] = None
+	
+	self.select_list.exp_alias_dic = new_select_dic
+	self.select_list.exp_list = new_exp_list
+	
+    def __genWhereIndex__(self):
+	if self.where_condition is None:
+	    return
+	if isinstance(self.where_condition.where_condition_exp, expression.Function):
+	    self.where_condition.where_condition_exp = self.where_condition.where_condition_exp.genIndex(self)
+
     def postProcess(self):
 	self.genProjectList()
 	if self.checkSchema() is False:
@@ -197,8 +222,6 @@ class SPNode(Node):
         return super(SPNode, self).toBinaryJoinTree()
 		
     def genProjectList(self):
-	#DEBUG
-	print self
 	self.child.genProjectList()
 	
 	for item in self.child.table_list:
@@ -208,7 +231,6 @@ class SPNode(Node):
 	
 	project_list = []
 	self.__genProjectList__(project_list)
-	print project_list
 	tmp_name = self.table_alias
 	if tmp_name in util.global_table_dic.keys():
 	    while tmp_name in util.global_table_dic.keys():
@@ -217,8 +239,6 @@ class SPNode(Node):
 	util.global_table_dic[tmp_name] = tmp_schema
 		
     def __genProjectList__(self, project_list):
-	#DEBUG
-	print self, self.child, self.select_list
 	if self.child.select_list is None:
 	    return
 	select_list = self.child.select_list
@@ -284,14 +304,14 @@ class SPNode(Node):
 			if item.column_name == select_dic[key]:
 			    flag = True
 			    item.table_name = ""
-			    if isinstance(key, Column):
+			    if isinstance(key, expression.Column):
 				item.column_name = key.column_name
 				item.table_name = key.table_name
 			    else:
 				tmp_func = item.func_obj
 				new_para_list = []
 				for para in tmp_func.parameter_list:
-				    if not isinstance(para, Column):
+				    if not isinstance(para, expression.Column):
 					new_para_list.append(para)
 					continue
 				    if para.column_name == item.column_name:
@@ -302,13 +322,13 @@ class SPNode(Node):
 				func_obj.set_para_list(new_para_list)
 			    break
 						
-			if isinstance(key, Column):
+			if isinstance(key, expression.Column):
 			    if item.column_name == key.column_name:
 				flag = True
 				item.table_name = key.table_name
 				break
 					
-			elif isinstance(key, Function):
+			elif isinstance(key, expression.Function):
 			    if item.column_name == select_dic[key]:
 				flag = True
 				item.table_name = ""
@@ -327,23 +347,23 @@ class SPNode(Node):
 			para_list = []
 			para_list.append(self.child.where_condition_exp)
 			para_list.append(new_exp)
-			self.child.where_condition.where_condition_exp = Function("AND", para_list)
+			self.child.where_condition.where_condition_exp = expression.Function("AND", para_list)
 	self.where_condition = None
 	self.child.predicatePushdown()
 	
     def columnFilter(self):
 	new_select_dic = {}
 	new_exp_list = []
-	if self.select_list is None or self.child.select_dic is None:
+	if self.select_list is None or self.child.select_list is None:
 	    # TODO error
 	    pass
 	child_exp_list = self.child.select_list.exp_list
-	child_exp_dic = self.child.exp_alias_dic
+	child_exp_dic = self.child.select_list.exp_alias_dic
 	
 	for exp in self.select_list.exp_list:
-	    if isinstance(exp, Column):
+	    if isinstance(exp, expression.Column):
 		for child_exp in child_exp_list:
-		    if isinstance(child_exp, Column):
+		    if isinstance(child_exp, expression.Column):
 			if child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_list:
 			    new_exp_list.append(child_exp)
 			    new_select_dic[child_exp] = exp.column_name
@@ -352,11 +372,11 @@ class SPNode(Node):
 			    new_exp_list.append(child_exp)
 			    new_select_dic[child_exp] = None
 			    break
-		    elif isinstance(child_exp, Function) and child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_List:
+		    elif isinstance(child_exp, expression.Function) and child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_List:
 			new_exp_list.append(child_exp)
 			new_select_dic[child_exp] = None
 			break
-	    elif isinstance(exp, Function):
+	    elif isinstance(exp, expression.Function):
 		col_list = []
 		exp.getPara(col_list)
 		for col in col_list:
@@ -433,7 +453,7 @@ class GroupbyNode(Node):
 		    para_list = []
 		    para_list.append(old_exp)
 		    para_list.append(new_where)
-		    new_exp = Function("AND", para_list)
+		    new_exp = expression.Function("AND", para_list)
 		else:
 		    self.child.where_condition = WhereConditionParser(None)
 		    new_exp = new_where
@@ -450,7 +470,7 @@ class GroupbyNode(Node):
 		para_list = []
 		para_list.append(self.where_condition.where_condition_exp)
 		para_list.append(self.having_clause.where_condition_exp)
-		self.where_condition.where_condition_exp = Function("AND", para_list)
+		self.where_condition.where_condition_exp = expression.Function("AND", para_list)
 	self.child.predicatePushdown()
 		
     def columnFilter(self):
@@ -460,12 +480,12 @@ class GroupbyNode(Node):
 	    # TODO error
 	    pass
 		
-	for exp in self.groupby_clause.groupby_exp_list:
-	    if isinstance(exp, Function):
+	for exp in self.groupby_clause.groupby_list:
+	    if isinstance(exp, expression.Function):
 		col_list = []
 		exp.getPara(col_list)
 		__addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
-	    elif isinstance(exp, Column):
+	    elif isinstance(exp, expression.Column):
 		__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
 	    else:
 		new_exp = copy.deepcopy(exp)
@@ -480,22 +500,23 @@ class GroupbyNode(Node):
 	
 	if self.select_list is not None:
 	    for exp in self.select_list.exp_list:
-		if isinstance(exp, Column):
-		    __addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
+		if isinstance(exp, expression.Column):
+		    GroupbyNode.__addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
 		    new_select_dic[new_exp] = self.select_list.exp_alias_dic[exp]
-		elif isinstance(exp, Function):
+		elif isinstance(exp, expression.Function):
 		    col_list =  []
 		    exp.getPara(col_list)
 		    for col in col_list:
-			__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
+			GroupbyNode.__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
 	self.child.select_list.exp_alias_dic = new_select_dic
 	self.child.select_list.exp_list = new_exp_list
 	self.child.columnFilter()
 
+    @staticmethod
     def __addExpToChildSelectList__(exp, new_exp_list, new_select_dic):
 	flag = False
 	for item in new_exp_list:
-	    if exp.campare(item) is True:
+	    if exp.compare(item) is True:
 		flag = True
 		break
 	if flag is False:
@@ -508,14 +529,14 @@ class GroupbyNode(Node):
 	self.child.processSelectStar()
 	
     def genColumnIndex(self):
-	if self.select_list is None or self.child_select_list is None:
+	if self.select_list is None or self.child.select_list is None:
 		# TODO error
 	    pass
 	select_dic = self.child.select_list.exp_alias_dic
 	exp_list = self.child.select_list.exp_list
 	if self.groupby_clause is not None:
-	    for exp in self.groupby_clause.groupby_exp_list:
-		if isinstance(exp, Column):
+	    for exp in self.groupby_clause.groupby_list:
+		if isinstance(exp, expression.Column):
 		    self.__genColumnIndex__(exp, exp_list, select_dic)
 						
 	if self.where_condition is not None:
@@ -525,20 +546,21 @@ class GroupbyNode(Node):
 		self.__genColumnIndex__(col, exp_list, select_dic)
 					
 	for exp in self.select_list.exp_list:
-	    if isinstance(exp, Column):
+	    if isinstance(exp, expression.Column):
 		self.__genColumnIndex__(exp, exp_list, select_dic)
-	    elif isinstance(exp, Function):
+	    elif isinstance(exp, expression.Function):
 		col_list = []
 		exp.getPara(col_list)
 		for col in col_list:
-		    self.__genColumnIndex__(col, exp_list, select_dic)
+		    GroupbyNode.__genColumnIndex__(col, exp_list, select_dic)
 	
 	self.child.genColumnIndex()
-				
+
+    @staticmethod	
     def __genColumnIndex__(col, exp_list, select_dic):
 	for exp in exp_list:
-	    if isinstance(exp, Column) and col.compare(exp) or col.column_name == select_dic[exp]:
-		col.column_name = exp_list.index[exp]
+	    if isinstance(exp, expression.Column) and col.compare(exp) or col.column_name == select_dic[exp]:
+		col.column_name = exp_list.index(exp)
 		break
 
 class OrderbyNode(Node):
@@ -579,7 +601,7 @@ class OrderbyNode(Node):
 	new_select_dic = {}
 	new_exp_list = []
 	for exp in self.orderby_clause.orderby_exp_list:
-	    if isinstance(exp, Column):
+	    if isinstance(exp, expression.Column):
 		for child_exp in self.child.select_list.exp_list:
 		    if exp.column_name == self.child.select_list.exp_alias_dic[child_exp]:
 			new_exp = copy.deepcopy(child_exp)
@@ -629,7 +651,7 @@ class JoinNode(Node):
 	    filter_name = "RIGHT"
 	
 	for x in self.select_list.tmp_exp_list:
-	    if isinstance(x, Column):
+	    if isinstance(x, expression.Column):
 		if x.table_name != filter_name:
 		    continue
 		index = x.column_name
@@ -723,7 +745,7 @@ class JoinNode(Node):
 		    self.right_child.where_condition = WhereConditionParser(None)
 		self.right_child.where_condition.where_condition_exp = copy.deepcopy(right_exp)
 	    if self.is_explicit is False:
-		join_exp = __genJoinKey__(exp, True)
+		join_exp = exp.genJoinKey()
 		if join_exp is not None:
 		    if self.join_condition is None:
 			self.join_condition = WhereConditionParser(None)
@@ -737,21 +759,23 @@ class JoinNode(Node):
 	self.right_child.predicatePushdown()
 	
     def columnFilter(self):
-	__childColumnFilter__(self, self.left_child)
-	__childColumnFilter__(self, self.right_child)
+	self.__childColumnFilter__(self.left_child)
+	self.__childColumnFilter__(self.right_child)
 	self.left_child.columnFilter()
 	self.right_child.columnFilter()
 	
     def __childColumnFilter__(self, child):
 	select_dic = {}
 	exp_list = []
-	__selectListFilter__(self.select_list, child.table_list, child.table_alias_dic, select_dic, exp_list)# TODO
+	if self.select_list is not None:
+	    for exp in self.select_list.exp_list:
+		exp.selectListFilter(self.select_list, child, select_dic, exp_list)
 	if self.where_condition is not None:
 	    self.where_condition.where_condition_exp.addToSelectList(self, select_dic, exp_list)
 	if self.is_explicit is True:
 	    self.join_condition.on_condition.addToSelectList(child, select_dic, exp_list)
 	elif self.join_condition is not None:
-	    self.join_condition.where_condition_exp.addToSelectList(node, select_dic, exp_list)
+	    self.join_condition.where_condition_exp.addToSelectList(child, select_dic, exp_list)
 	
 	if child.select_list is None:
 	    child.select_list = SelectListParser(None)
@@ -800,80 +824,55 @@ class JoinNode(Node):
 	elif self.join_condition is not None:
 	    join_exp = self.join_condition.where_condition_exp
 		
-	if self.child.select_list is not None:
-	    select_dic = self.child.select_list.exp_alias_dic
-	    exp_list = self.child.select_list.exp_list
+	if child.select_list is not None:
+	    select_dic = child.select_list.exp_alias_dic
+	    exp_list = child.select_list.exp_list
 	
 	    # generate the index of join key
 	    if join_exp is not None:
 		col_list = []
 		if isinstance(child, TableNode):					
 		    if self.is_explicit is True:
-			self.join_condition.on_condition_exp = self.join_condition.on_condition_exp.genIndex(node)
-			self.join_condition.on_condition_exp.genFuncPara(col_list)
+			self.join_condition.on_condition_exp = self.join_condition.on_condition_exp.genIndex(child)
+			self.join_condition.on_condition_exp.getPara(col_list)
 		    elif self.join_condition is not None:
-			self.join_condition.where_condition_exp = self.join_condition.where_condition_exp.genIndex(node)
-			self.join_condition.on_condition_exp.genFuncPara(col_list)
+			self.join_condition.where_condition_exp = self.join_condition.where_condition_exp.genIndex(child)
+			self.join_condition.where_condition_exp.getPara(col_list)
 		    for col in col_list:
 			if col.table_name in child.table_list:
 			    col.table_name = child_name
 			    self.table_list.append(child_name)
 		else:
-		    join_exp.genFuncPara(col_list)
+		    join_exp.getPara(col_list)
 		    for col in col_list:
 			self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
 		
 		# generate the index of select list
 	    for exp in self.select_list.exp_list:
-		if isinstance(exp, Function):
+		if isinstance(exp, expression.Function):
 		    col_list = []
-		    exp.genFuncPara(col_list)
+		    exp.getPara(col_list)
 		    for col in col_list:
 			self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
-		else:
+		elif isinstance(exp, expression.Column):
 		    self.__genColumnIndex__(exp, exp_list, select_dic, self.table_list, child_name)
 	
 	if self.where_condition is not None:
 	    where_exp = self.where_condition.where_condition_exp
 	    col_list = []
-	    where_exp.genFuncPara(col_list)
-	    for col in col_list:
-		self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
+	    where_exp.getPara(col_list)
+	    for cal in col_list:
+		JoinNode.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
 		
-	
+    @staticmethod
     def __genColumnIndex__(col, exp_list, select_dic, table_list, table_name):
 	for exp in exp_list:
-	    if (isinstance(exp, Column) and col.compare(exp)) or col.column_name == select_dic[exp]:
+	    if (isinstance(exp, expression.Column) and col.compare(exp)) or col.column_name == select_dic[exp]:
 		col.table_name = table_name
 		col.col_name = exp_list.index(exp)
 		if table_name not in table_list:
 		    table_list.append(table_name)
 		    break
-
-    def __getSelectIndex__(self):
-	if self.select_list is None:
-	    return
-	new_select_dic = {}
-	new_exp_list = []
-	exp_dic = self.select_list.exp_alias_dic
-	exp_list = self.select_list.exp_list
-	
-	for exp in exp_list:
-	    new_exp = exp.genIndex(self)
-	    new_exp_list.append(new_exp)
-	    if isinstance(exp, Column):
-		new_select_dic[new_exp] = self.select_list.exp_alias_dic[exp]
-	    else:
-		new_select_dic[new_exp] = None
-	
-	self.select_list.exp_alias_dic = new_select_dic
-	self.select_list.exp_list = new_exp_list
-	
-    def __genWhereIndex__(self):
-	if self.where_condition is None:
-	    return
-	if isinstance(self.where_condition.where_condition_exp, Function):
-	    self.where_condition.where_condition_exp = self.where_condition.where_condition_exp.genIndex(self)
 
 class JoinNodeList(Node):
     is_explicit = None
@@ -1018,8 +1017,6 @@ class RootSelectNode(Node):
     def toInitialQueryPlanTree(self):
 	node = None
 	tmp_from_list = self.converted_from_list
-	#DEBUG
-	print tmp_from_list, "FROM_LIST"
 	if len(tmp_from_list) == 1:
 	    node = self.toInitialPlanTree(tmp_from_list[0])
 	

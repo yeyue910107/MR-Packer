@@ -16,6 +16,7 @@
 """
 
 import util
+import copy
 
 class Expression():
     exp_type = None #expression type coule be Function, Constant, Column, etc.
@@ -85,7 +86,7 @@ class Function(Expression):
 		if para.column_name == "*":
 		    # TODO error
 		    pass
-		if para.table_name in table_list:
+		if para.table_name in node.table_list:
 		    new_para = para.genIndex(node)
 		    if new_para is None:
 			# TODO error
@@ -109,12 +110,12 @@ class Function(Expression):
 	if self.func_name in ["AND", "OR"]:
 	    for para in self.para_list:
 		if isinstance(para, Function):
-		    para.addToSelectList(node)
+		    para.addToSelectList(node, new_dic, new_list)
 	else:
 	    col_list = []
 	    self.getPara(col_list)
 	    for col in col_list:
-		if col.table_name in table_list or col.table_name in table_alias_dic.values() and len(filter(lambda x:x.compare(col), new_list)) == 0:
+		if col.table_name in node.table_list or col.table_name in node.table_alias_dic.values() and len(filter(lambda x:x.compare(col), new_list)) == 0:
 		    tmp = copy.deepcopy(col)
 		    new_list.append(tmp)
 		    new_dic[tmp] = None
@@ -219,13 +220,56 @@ class Function(Expression):
 		return None
 	    return self
 
+    def selectListFilter(self, node, new_dic, new_list):
+	col_list = []
+	self.getPara(col_list)
+	for col in col_list:
+	    if col.table_name in node.table_list:
+		flag = False
+		for exp in new_list:
+		    if exp.compare(col) is True:
+			flag = True
+			break
+		if flag is False:
+		    new_exp = copy.deepcopy(col)
+		    new_list.append(new_exp)
+		    new_dic[new_exp] = None
+
     def removePara(self):
 	exp = self.func_obj
-	if not isinstance(self, Function) or exp == self:
+	if not isinstance(exp, Function) or exp == self:
 	    return
-	new_list = filter(lambda x:x != self, exp.para_list)
+	new_list = filter(lambda x:x != self, self.para_list)
 	exp.para_list = new_list
-	
+
+    def genJoinKey(self):
+	ret_exp = None
+
+	if self.func_name == "AND":
+	    exp_list = []
+	    for para in self.para_list:
+		tmp = para.genJoinKey()
+		if tmp is not None:
+		    exp_list.append(tmp)
+	    
+	    if len(exp_list) == 0:
+		return None
+	    if len(exp_list) == 1:
+		ret_exp = copy.deepcopy(exp_list[0])
+		exp_list[0].removePara()
+		return ret_exp
+	    for exp in exp_list:
+		exp.removePara()
+	    return Function("AND", exp_list)
+	else:
+	    if self.func_name != "EQ":
+		return None
+	    if len(self.para_list) != 2:
+		return None
+	    if isinstance(self.para_list[0], Column) and isinstance(self.para_list[1], Column) and self.para_list[0].table_name != self.para_list[1].table_name:
+		return self
+	    return None
+
 class Column(Expression):
     column_type = None
     column_name = None
@@ -275,7 +319,7 @@ class Column(Expression):
 		if self.table_name not in node.table_list:
 		    # TODO error
 		    pass
-		tmp_table = searchTable(self.table_name)
+		tmp_table = util.searchTable(self.table_name)
 		if tmp_table is None:
 		    return None
 		index = tmp_table.getColumnIndexByName(self.column_name)
@@ -283,7 +327,7 @@ class Column(Expression):
 		new_exp.column_name = int(new_exp.column_name)
 		new_exp.column_name = self.column_type
 	else:
-	    tmp_column = searchColumn(self.column_name)
+	    tmp_column = util.searchColumn(self.column_name)
 	    tmp_table = None
 	    for tmp in tmp_column:
 		if tmp.table_schema.table_name in node.table_list or tmp.table_schema.table_name in node.table_alias_dic.values():
@@ -299,7 +343,40 @@ class Column(Expression):
 	
     def hasGroupbyFunc(self):
 	return False
-		
+
+    def compare(self, exp):
+	if isinstance(exp, Column) and self.column_type == exp.column_type and self.column_name == exp.column_name and self.table_name == exp.table_name:
+	    return True
+	return False
+
+    def selectListFilter(self, select_list, node, new_dic, new_list):
+	for table in node.table_list:
+	    if table == self.table_name:
+		if util.isColumnInTable(self.column_name, table):
+		    flag = False
+		    for exp in new_list:
+			if exp.compare(self):
+			    flag = True
+			    break
+		    if flag is False:
+			new_exp = copy.deepcopy(self)
+			new_list.append(new_exp)
+			new_dic[new_exp] = select_list.exp_alias_dic[self]
+		    break
+
+	for table in node.table_alias_dic.keys():
+	    if table == self.table_name:
+		if util.isColumnInTable(self.column_name, node.table_alias_dic[table]):
+		    flag = False
+		    for exp in new_list:
+			if exp.compare(self):
+			    flag = True
+			    break
+		    if flag is False:
+			new_exp = copy.deepcopy(self)
+			new_list.append(new_exp)
+			new_dic[new_exp] = select_list.exp_alias_dic[self]
+
 class Constant(Expression):
     const_type = None
     const_value = None	
@@ -311,8 +388,16 @@ class Constant(Expression):
     def evaluate(self):
 	return self.const_value
 
+    def compare(self, exp):
+	if isinstance(exp, Constant) and self.const_type == exp.const_type and self.const_value == exp.const_value:
+	    return True
+	return False
+	
     def hasGroupbyFunc(self):
 	return False
+
+    def selectListFilter(self, select_list, node, new_dic, new_list):
+	pass
 
 class ExpressionParser:
     def __init__(self):

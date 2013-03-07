@@ -47,8 +47,6 @@ class TableSchema:
 	    self.column_name_list.append(item.column_name)
 
     def getColumnIndexByName(self, name):
-	#DEBUG
-	print self.table_name, self.column_name_list
 	return self.column_name_list.index(name)
 
     def getColumnByName(self, name):

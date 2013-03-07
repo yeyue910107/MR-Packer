@@ -117,8 +117,6 @@ class SelectListParser(ASTreeNodeParser):
 	self.converted_str = self.convertItemListToStr(self.source)
 	self.exp_alias_dic = {}
 	self.exp_list = self.convertItemListToExpList(self.source)
-	#DEBUG
-	print self.exp_list, "SELECT_LIST", self.exp_alias_dic
 	self.converted_exp_str = self.convertExpListToStr(self.exp_list)
 	self.real_struct = None
 
@@ -153,8 +151,6 @@ class SelectListParser(ASTreeNodeParser):
 		exp = exp_parser.parse(input_exp_list)
 		
 		# setup alias
-		#DEBUG
-		print exp, as_alias
 		# explicit: a AS b
 		if as_alias is not None:
 		    self.exp_alias_dic[exp] = as_alias
