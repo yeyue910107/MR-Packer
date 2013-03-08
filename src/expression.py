@@ -274,6 +274,7 @@ class Column(Expression):
     column_type = None
     column_name = None
     table_name = None
+    func_obj = None
 	
     def __init__(self, table_name, column_name):
 	self.table_name = table_name
@@ -381,12 +382,12 @@ class Constant(Expression):
     const_type = None
     const_value = None	
 
-    def __init__(self, const_type, const_value):
+    def __init__(self, const_value, const_type):
 	self.const_type = const_type
 	self.const_value = const_value
 
     def evaluate(self):
-	return self.const_value
+	return str(self.const_value)
 
     def compare(self, exp):
 	if isinstance(exp, Constant) and self.const_type == exp.const_type and self.const_value == exp.const_value:

@@ -500,5 +500,5 @@ def astToQueryPlan(schema, file):
     processSchemaFile(schema)
     root = fileToRoot(file)
     pt = root.toPlanTree()
-    pt.postProcess()
     pt.__print__()
+    pt.postProcess()

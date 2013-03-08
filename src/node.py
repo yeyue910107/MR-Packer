@@ -57,7 +57,7 @@ class Node(object):
 	    if flag is False:
 		return self
 	    gb.groupby_clause = ast.GroupbyParser(None)
-	    gb.groupby_clause.groupby_list.append(expression.Constant(1, "INTERGER"))
+	    gb.groupby_clause.groupby_list.append(expression.Constant(1, "INTEGER"))
 		
 	for table in self.table_list:
 	    if table not in gb.table_list:
@@ -142,7 +142,7 @@ class Node(object):
 			for col in col_list:
 			    if col.column_name == "*":
 				func_obj = col.func_obj
-				new_con = expression.Constant(1, "INTERGER")
+				new_con = expression.Constant(1, "INTEGER")
 				func_obj.replace(col, new_con)
 			new_exp_list.append(exp)
 			new_select_dic[exp] = select_dic[exp]
