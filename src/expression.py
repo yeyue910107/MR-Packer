@@ -282,7 +282,7 @@ class Column(Expression):
     def evaluate(self):
 	if self.table_name == "":
 	    return "UNKNOWN." + self.column_name
-	return self.table_name + "." + self.column_name
+	return str(self.table_name) + "." + str(self.column_name)
 
     def genTableName(self, node):
 	if self.table_name != "":

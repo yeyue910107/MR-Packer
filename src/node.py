@@ -129,7 +129,7 @@ class Node(object):
 				    new_exp_list.append(tmp_exp)
 				    new_select_dic[tmp_exp] = None
 			for key in self.table_alias_dic.keys():
-			    table = util.searchTable(self.self.table_alias_dic[key])
+			    table = util.searchTable(self.table_alias_dic[key])
 			    if table is not None:
 				for col in table.column_list:
 				    tmp_exp = expression.Column(item, col.column_name)
@@ -196,7 +196,14 @@ class Node(object):
 	self.columnFilter()
 	self.genTableName()
 	self.genColumnIndex()
-		
+	
+    def __print__(self):
+	if self.select_list is not None:
+	    self.select_list.__print__()
+	if self.where_condition is not None:
+	    self.where_condition.__print__()
+	print "table_list: ", self.table_list, "table_alias_dic: ", self.table_alias_dic
+	
 class SPNode(Node):
     child = None
     parent = None
@@ -396,7 +403,14 @@ class SPNode(Node):
 	self.__genSelectIndex__()
 	self.__genWhereIndex__()
 	self.child.genColumnIndex()
-	
+
+    def __print__(self):
+	print "SPNode:"
+	super(SPNode, self).__print__()
+	print "in_table_list: ", self.in_table_list, "in_table_alias_dic: ", self.in_table_alias_dic
+	if self.child is not None:
+	    self.child.__print__()
+
 class TableNode(Node):
     parent = None
     composite = None
@@ -415,6 +429,11 @@ class TableNode(Node):
     def genColumnIndex(self):
 	self.__genSelectIndex__()
 	self.__genWhereIndex__()
+
+    def __print__(self):
+	print "TableNode:"
+	super(TableNode, self).__print__()
+	print "table_name: ", self.table_name, "table_alias: ", self.table_alias
 
 class GroupbyNode(Node):
     child = None
@@ -563,6 +582,14 @@ class GroupbyNode(Node):
 		col.column_name = exp_list.index(exp)
 		break
 
+    def __print__(self):
+	print "GroupbyNode:"
+	super(GroupbyNode, self).__print__()
+	if self.groupby_clause is not None:
+	    self.groupby_clause.__print__()
+	if self.child is not None:
+	    self.child.__print__()
+	
 class OrderbyNode(Node):
     child = None
     parent = None
@@ -629,6 +656,14 @@ class OrderbyNode(Node):
 	
     def genColumnIndex(self):
 	self.child.genColumnIndex()
+
+    def __print__(self):
+	print "OrderbyNode:"
+	super(OrderbyNode, self).__print__()
+	if self.orderby_clause is not None:
+	    self.orderby_clause.__print__()
+	if self.child is not None:
+	    self.child.printNode()
 
 class JoinNode(Node):
     is_explicit = None
@@ -873,6 +908,19 @@ class JoinNode(Node):
 		if table_name not in table_list:
 		    table_list.append(table_name)
 		    break
+
+    def __print__(self):
+	print "JoinNode:"
+	super(JoinNode, self).__print__()
+	print "is_explicit: ", self.is_explicit, "join_type: ", self.join_type
+	if self.join_condition is not None:
+	    self.join_condition.__print__()
+	if self.left_child is not None:
+	    print "left_child:"
+	    self.left_child.__print__()
+	if self.right_child is not None:
+	    print "right_child:"
+	    self.right_child.__print__()
 
 class JoinNodeList(Node):
     is_explicit = None

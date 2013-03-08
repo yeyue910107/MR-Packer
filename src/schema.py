@@ -30,7 +30,7 @@ class ColumnSchema:
 	
     def setOthers(self, others):
 	self.column_others = others
-		
+
 class TableSchema:
     table_name = None
     column_list = None
@@ -54,6 +54,9 @@ class TableSchema:
 	if index != -1:
 	    return self.column_list[index]
 	return None
+
+    def evaluate(self):
+	return self.table_name
 			
 class SchemaChecker:
     node = None

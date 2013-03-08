@@ -193,6 +193,11 @@ class SelectListParser(ASTreeNodeParser):
 	
 	return ret_str[:-2]
 		
+    def __print__(self):
+	print "select_list:"
+	print "exp_list: ", util.printExpList(self.exp_list)
+	print "exp_alias_dic: ", util.printExpAliasDic(self.exp_alias_dic)
+
 class OnConditionParser(ASTreeNodeParser):
     on_condition_exp = None
 
@@ -232,7 +237,10 @@ class OnConditionParser(ASTreeNodeParser):
 		ret_str += self.convertItemToStr(item)
 		ret_str += ""
 	    return ret_str
-			
+
+    def __print__(self):
+	print "on_condition: ", self.on_condition_exp.evaluate()
+
 class WhereConditionParser(ASTreeNodeParser):
     where_condition_exp = None
 
@@ -320,7 +328,10 @@ class WhereConditionParser(ASTreeNodeParser):
 	if exp is None:
 	    return None
 	return exp.evaluate()
-	
+
+    def __print__(self):
+	print "where_condition: ", self.where_condition_exp.evaluate()
+
 class GroupbyParser(ASTreeNodeParser):
     groupby_list = None
 
@@ -377,7 +388,10 @@ class GroupbyParser(ASTreeNodeParser):
 	    ret_str += "(" + exp.evaluate() + ")" + ", "
 	
 	return ret_str[:-2]
-		
+
+    def __print__(self):
+	print "groupby_list: ", util.printExpList(self.groupby_list)
+
 class OrderbyParser(ASTreeNodeParser):
     orderby_exp_list = None
     orderby_type_list = None
@@ -423,6 +437,9 @@ class OrderbyParser(ASTreeNodeParser):
 	
 	self.orderby_type_list = tmp_orderby_type_list
 	return ret_exp_list
+
+    def __print__(self):
+	print "orderby_list: ", util.printExpList(self.orderby_list)
 
 def processSchemaFile(_schema):
 	global global_table_dic
@@ -484,5 +501,4 @@ def astToQueryPlan(schema, file):
     root = fileToRoot(file)
     pt = root.toPlanTree()
     pt.postProcess()
-	
-
+    pt.__print__()
