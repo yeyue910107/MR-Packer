@@ -30,6 +30,7 @@ class Node(object):
     orderby_clause = None
     table_list = []
     table_alias_dic = {}
+    is_handler = None
 
     def __init__(self):
         pass
@@ -38,6 +39,7 @@ class Node(object):
         # explicit groupby
 	gb = GroupbyNode()
 	gb.source = self.source
+	gb.is_handler = self.is_handler
 	gb.select_list = copy.deepcopy(self.select_list)
 	self.groupby_clause = None
         if self.groupby_clause is not None:
@@ -71,6 +73,7 @@ class Node(object):
         if self.orderby_clause is not None:
             ob = OrderbyNode()
             ob.source = self.source
+	    ob.is_handler = self.is_handler
             ob.select_list = None
             ob.orderby_clause = self.orderby_clause
             self.orderby_clause = None
@@ -317,7 +320,7 @@ class SPNode(Node):
 			    else:
 				tmp_func = item.func_obj
 				new_para_list = []
-				for para in tmp_func.parameter_list:
+				for para in tmp_func.para_list:
 				    if not isinstance(para, expression.Column):
 					new_para_list.append(para)
 					continue
@@ -326,7 +329,7 @@ class SPNode(Node):
 					new_para_list.append(new_para)
 				    else:
 					new_para_list.append(para)
-				func_obj.set_para_list(new_para_list)
+				tmp_func.setParaList(new_para_list)
 			    break
 						
 			if isinstance(key, expression.Column):
@@ -583,7 +586,7 @@ class GroupbyNode(Node):
 		break
 
     def __print__(self):
-	print "GroupbyNode:"
+	print "GroupbyNode:", self
 	super(GroupbyNode, self).__print__()
 	if self.groupby_clause is not None:
 	    self.groupby_clause.__print__()
@@ -813,7 +816,7 @@ class JoinNode(Node):
 	    self.join_condition.where_condition_exp.addToSelectList(child, select_dic, exp_list)
 	
 	if child.select_list is None:
-	    child.select_list = SelectListParser(None)
+	    child.select_list = ast.SelectListParser(None)
 	if isinstance(child, SPNode):
 	    new_list = []
 	    new_dic = {}
@@ -823,8 +826,8 @@ class JoinNode(Node):
 		pass
 	    for col in table.column_list:
 		flag = False
-		for exp in child_exp_list:
-		    if col.compare(exp) is True:
+		for exp in exp_list:
+		    if col.column_name == exp.column_name and exp.table_name == table.table_name:
 			flag = True
 			break
 		if flag is True:
@@ -1008,18 +1011,20 @@ class RootSelectNode(Node):
 	self.from_list = []
 	super(RootSelectNode, self).__init__()
 
-    def toInitialPlanTree(self, input):
+    def toInitialPlanTree(self, input, is_handler):
 	node = None
 	if input["type"] == "BaseTable":
 	    node = TableNode()
 	    node.source = input
+	    node.is_handler = is_handler
 	    node.table_name = input["content"]
 	    node.table_alias = input["alias"]
-	    node.select_list = self.select_list
-            node.where_condition = self.where_condition
-            node.groupby_clause = self.groupby_clause
-            node.having_clause = self.having_clause
-            node.orderby_clause = self.orderby_clause
+	    if is_handler:
+	        node.select_list = self.select_list
+                node.where_condition = self.where_condition
+                node.groupby_clause = self.groupby_clause
+                node.having_clause = self.having_clause
+                node.orderby_clause = self.orderby_clause
 	    if node.table_alias == "":
 		node.table_list.append(node.table_name)
 	    else:
@@ -1029,12 +1034,13 @@ class RootSelectNode(Node):
 	elif input["type"] == "SubQuery":
 	    node = SPNode()
 	    node.source = input
-		
-	    node.select_list = self.select_list
-            node.where_condition = self.where_condition
-            node.groupby_clause = self.groupby_clause
-            node.having_clause = self.having_clause
-            node.orderby_clause = self.orderby_clause
+	    node.is_handler = is_handler
+	    if is_handler:	
+	        node.select_list = self.select_list
+                node.where_condition = self.where_condition
+                node.groupby_clause = self.groupby_clause
+                node.having_clause = self.having_clause
+                node.orderby_clause = self.orderby_clause
 	    node.child = input["content"].toInitialQueryPlanTree()
 	    node.table_alias = input["alias"]
 	    if node.table_alias is not None and node.table_alias not in node.table_list:
@@ -1043,15 +1049,16 @@ class RootSelectNode(Node):
 	elif input["type"] == "JoinClause":
 	    node = JoinNodeList()
 	    node.source = input
-		
-	    node.select_list = self.select_list
-            node.where_condition = self.where_condition
-            node.groupby_clause = self.groupby_clause
-            node.having_clause = self.having_clause
-            node.orderby_clause = self.orderby_clause
+	    node.is_handler = is_handler
+	    if is_handler:
+	        node.select_list = self.select_list
+                node.where_condition = self.where_condition
+                node.groupby_clause = self.groupby_clause
+                node.having_clause = self.having_clause
+                node.orderby_clause = self.orderby_clause
 	    tmp_children_list = []
 	    for item in input["content"]:
-		child = self.toInitialPlanTree(item)
+		child = self.toInitialPlanTree(item, False)
 		tmp_children_list.append(child)
 	    node.children_list = list(tmp_children_list)
 		
@@ -1066,7 +1073,7 @@ class RootSelectNode(Node):
 	node = None
 	tmp_from_list = self.converted_from_list
 	if len(tmp_from_list) == 1:
-	    node = self.toInitialPlanTree(tmp_from_list[0])
+	    node = self.toInitialPlanTree(tmp_from_list[0], True)
 	
 	else:
 	    node = JoinNodeList()
@@ -1078,7 +1085,7 @@ class RootSelectNode(Node):
 	
 	    tmp_list = []
 	    for item in tmp_from_list:
-		converted_item = self.toInitialPlanTree(item)
+		converted_item = self.toInitialPlanTree(item, False)
 		tmp_list.append(converted_item)
 		for key in converted_item.table_alias_dic.keys():
 		    if key not in node.table_alias_dic.keys():
@@ -1205,7 +1212,7 @@ class RootSelectNode(Node):
 		    flag = True
 		tmp_list = []
 	
-	    parser = OnConditionParser(tmp_list)
+	    parser = ast.OnConditionParser(tmp_list)
 	    item_dic["on_condition"].append(parser)
 	    tmp_converted_from_list.append(item_dic)
 	

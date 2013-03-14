@@ -44,6 +44,7 @@ class Function(Expression):
     def __init__(self, func_name, para_list):
         self.func_name = func_name
 	self.para_list = para_list
+	self.setFuncObj(self)
     
     def evaluate(self):
 	ret = ""
@@ -53,6 +54,15 @@ class Function(Expression):
         ret = ret[:-1]
         return self.func_name + "(" + ret + ")"
 	
+    def setFuncObj(self, func_obj):
+	self.func_obj = func_obj
+	for para in self.para_list:
+	    para.setFuncObj(self)
+
+    def setParaList(self, para_list):
+	self.para_list = para_list
+	self.setFuncObj(self)
+
     def getValueType(self):
 	return "DECIMAL"
 	
@@ -285,6 +295,9 @@ class Column(Expression):
 	    return "UNKNOWN." + self.column_name
 	return str(self.table_name) + "." + str(self.column_name)
 
+    def setFuncObj(self, func_obj):
+	self.func_obj = func_obj
+
     def genTableName(self, node):
 	if self.table_name != "":
 	    table = util.searchTable(self.table_name)
@@ -388,6 +401,9 @@ class Constant(Expression):
 
     def evaluate(self):
 	return str(self.const_value)
+
+    def setFuncObj(self, func_obj):
+	return
 
     def compare(self, exp):
 	if isinstance(exp, Constant) and self.const_type == exp.const_type and self.const_value == exp.const_value:

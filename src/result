@@ -1,4 +1,4 @@
-GroupbyNode:
+GroupbyNode: <node.GroupbyNode object at 0x8c1aaac>
 select_list:
 exp_list:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0)
 None
@@ -18,22 +18,7 @@ table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_ali
 is_explicit:  False join_type:  None
 where_condition:  AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ))
 left_child:
-GroupbyNode:
-select_list:
-exp_list:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0)
-None
-exp_alias_dic:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
-None
-table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
-groupby_list:  1
-None
 SPNode:
-select_list:
-exp_list:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0)
-None
-exp_alias_dic:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
-None
-where_condition:  AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ))
 table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
 in_table_list:  [] in_table_alias_dic:  {}
 JoinNode:
@@ -52,52 +37,17 @@ is_explicit:  False join_type:  None
 where_condition:  AND(EQ(UNKNOWN.P_PARTKEY,UNKNOWN.L_PARTKEY),EQ(UNKNOWN.P_BRAND,"BRAND#34"),EQ(UNKNOWN.P_CONTAINER,"MED PACK"))
 left_child:
 TableNode:
-select_list:
-exp_list:  UNKNOWN.L_PARTKEY
-UNKNOWN.L_QUANTITY
-UNKNOWN.L_EXTENDEDPRICE
-None
-exp_alias_dic:  UNKNOWN.L_PARTKEY : L_PARTKEY
-UNKNOWN.L_QUANTITY : L_QUANTITY
-UNKNOWN.L_EXTENDEDPRICE : L_EXTENDEDPRICE
-None
-where_condition:  AND(EQ(UNKNOWN.P_PARTKEY,UNKNOWN.L_PARTKEY),EQ(UNKNOWN.P_BRAND,"BRAND#34"),EQ(UNKNOWN.P_CONTAINER,"MED PACK"))
 table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
 table_name:  LINEITEM table_alias:  
 right_child:
 TableNode:
-select_list:
-exp_list:  UNKNOWN.L_PARTKEY
-UNKNOWN.L_QUANTITY
-UNKNOWN.L_EXTENDEDPRICE
-None
-exp_alias_dic:  UNKNOWN.L_EXTENDEDPRICE : L_EXTENDEDPRICE
-UNKNOWN.L_PARTKEY : L_PARTKEY
-UNKNOWN.L_QUANTITY : L_QUANTITY
-None
-where_condition:  AND(EQ(UNKNOWN.P_PARTKEY,UNKNOWN.L_PARTKEY),EQ(UNKNOWN.P_BRAND,"BRAND#34"),EQ(UNKNOWN.P_CONTAINER,"MED PACK"))
 table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
 table_name:  PART table_alias:  
 right_child:
-GroupbyNode:
-select_list:
-exp_list:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0)
-None
-exp_alias_dic:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
-None
-table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
-groupby_list:  1
-None
 SPNode:
-select_list:
-exp_list:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0)
-None
-exp_alias_dic:  DIVIDE(SUM(UNKNOWN.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
-None
-where_condition:  AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ))
 table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'LINEITEM', u'TINNER'] table_alias_dic:  {}
 in_table_list:  [] in_table_alias_dic:  {}
-GroupbyNode:
+GroupbyNode: <node.GroupbyNode object at 0x8c2dd6c>
 select_list:
 exp_list:  UNKNOWN.L_PARTKEY
 MULTIPLY(0.2,AVG(UNKNOWN.L_QUANTITY))
