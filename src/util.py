@@ -48,8 +48,10 @@ def printExpList(exp_list):
     for exp in exp_list:
 	if exp is not None:
 	    print exp.evaluate()
+    return
 
 def printExpAliasDic(exp_alias_dic):
     for exp in exp_alias_dic.keys():
 	if exp is not None:
 	    print exp.evaluate() + " : " + str(exp_alias_dic[exp])
+    return

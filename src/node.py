@@ -19,6 +19,7 @@ import util
 import ast
 import copy
 import schema
+import op
 
 class Node(object):
     source = None
@@ -48,7 +49,7 @@ class Node(object):
                 gb.having_clause = self.having_clause
                 self.having_clause = None
 
-        # implicit orderby, with avg function
+        # implicit groupby, with avg function
         else:
             if self.select_list is None:
                 return self
@@ -107,7 +108,7 @@ class Node(object):
 	
     def predicatePushdown(self):
 	pass
-		
+
     def columnFilter(self):
 	pass
 		
@@ -188,24 +189,27 @@ class Node(object):
 	if isinstance(self.where_condition.where_condition_exp, expression.Function):
 	    self.where_condition.where_condition_exp = self.where_condition.where_condition_exp.genIndex(self)
 
+    def toOp(self):
+	return None
+
     def postProcess(self):
 	self.genProjectList()
-	if self.checkSchema() is False:
+	#if self.checkSchema() is False:
 	    # TODO error
-	    pass
+	#    pass
 	self.processSelectStar()
 	self.genTableName()
 	self.predicatePushdown()
-	self.columnFilter()
-	self.genTableName()
-	self.genColumnIndex()
-	
+	#self.columnFilter()
+	#self.genTableName()
+	#self.genColumnIndex() 
+
     def __print__(self):
 	if self.select_list is not None:
 	    self.select_list.__print__()
 	if self.where_condition is not None:
 	    self.where_condition.__print__()
-	print "table_list: ", self.table_list, "table_alias_dic: ", self.table_alias_dic
+	#print "table_list: ", self.table_list, "table_alias_dic: ", self.table_alias_dic
 	
 class SPNode(Node):
     child = None
@@ -242,16 +246,17 @@ class SPNode(Node):
 	project_list = []
 	self.__genProjectList__(project_list)
 	tmp_name = self.table_alias
-	if tmp_name in util.global_table_dic.keys():
-	    while tmp_name in util.global_table_dic.keys():
-		tmp_name += "_1"
-	tmp_schema = schema.TableSchema(tmp_name, project_list)
-	util.global_table_dic[tmp_name] = tmp_schema
+	if tmp_name is not None:
+	    if tmp_name in util.global_table_dic.keys():
+	        while tmp_name in util.global_table_dic.keys():
+		    tmp_name = tmp_name + "_1"
+	    tmp_schema = schema.TableSchema(tmp_name, project_list)
+	    util.global_table_dic[tmp_name] = tmp_schema
 		
     def __genProjectList__(self, project_list):
-	if self.child.select_list is None:
+	if self.select_list is None:
 	    return
-	select_list = self.child.select_list
+	select_list = self.select_list
 	table_list = self.in_table_list
 	table_alias_dic = self.in_table_alias_dic
 	exp_dic = select_list.exp_alias_dic
@@ -307,7 +312,7 @@ class SPNode(Node):
 	    if tmp_exp is not None:
 		col_list = []
 		tmp_exp.getPara(col_list)
-		select_dic = self.child.select_list.exp_alias_dic
+		select_dic = self.select_list.exp_alias_dic
 		for item in col_list:
 		    flag = False
 		    for key in select_dic.keys():
@@ -346,7 +351,7 @@ class SPNode(Node):
 		    if flag is False:
 			# TODO error
 			pass
-				
+		"""	
 		child_exp = tmp_exp.booleanFilter(self, True)
 		if child_exp is not None:
 		    if self.child.where_condition is None:
@@ -357,8 +362,8 @@ class SPNode(Node):
 			para_list = []
 			para_list.append(self.child.where_condition_exp)
 			para_list.append(new_exp)
-			self.child.where_condition.where_condition_exp = expression.Function("AND", para_list)
-	self.where_condition = None
+			self.child.where_condition.where_condition_exp = expression.Function("AND", para_list)"""
+	#self.where_condition = None
 	self.child.predicatePushdown()
 	
     def columnFilter(self):
@@ -366,7 +371,7 @@ class SPNode(Node):
 	new_exp_list = []
 	if self.select_list is None or self.child.select_list is None:
 	    # TODO error
-	    pass
+	    return
 	child_exp_list = self.child.select_list.exp_list
 	child_exp_dic = self.child.select_list.exp_alias_dic
 	
@@ -407,6 +412,11 @@ class SPNode(Node):
 	self.__genWhereIndex__()
 	self.child.genColumnIndex()
 
+    def toOp(self):
+	ret_op = op.SpjOp()
+	ret_op.is_sp = True
+	ret_op.map_phase.append(self)
+
     def __print__(self):
 	print "SPNode:"
 	super(SPNode, self).__print__()
@@ -431,7 +441,10 @@ class TableNode(Node):
 	
     def genColumnIndex(self):
 	self.__genSelectIndex__()
-	self.__genWhereIndex__()
+	aself.__genWhereIndex__()
+
+    def toOp(self):
+	return None
 
     def __print__(self):
 	print "TableNode:"
@@ -461,6 +474,7 @@ class GroupbyNode(Node):
 	return False
 	
     def genTableName(self):
+	super(GroupbyNode, self).genTableName()
 	if self.groupby_clause is not None:
 	    for exp in self.groupby_clause.groupby_list:
 		exp.genTableName(self)
@@ -500,7 +514,7 @@ class GroupbyNode(Node):
 	new_exp_list = []
 	if self.groupby_clause is None:
 	    # TODO error
-	    pass
+	    return
 		
 	for exp in self.groupby_clause.groupby_list:
 	    if isinstance(exp, expression.Function):
@@ -553,7 +567,7 @@ class GroupbyNode(Node):
     def genColumnIndex(self):
 	if self.select_list is None or self.child.select_list is None:
 		# TODO error
-	    pass
+	    return
 	select_dic = self.child.select_list.exp_alias_dic
 	exp_list = self.child.select_list.exp_list
 	if self.groupby_clause is not None:
@@ -585,8 +599,13 @@ class GroupbyNode(Node):
 		col.column_name = exp_list.index(exp)
 		break
 
+    def toOp(self):
+	ret_op = op.SpjeOp()
+	ret_op.map_phase.append(self)
+	ret_op.reduce_phase.append(self)
+
     def __print__(self):
-	print "GroupbyNode:", self
+	print "GroupbyNode:"
 	super(GroupbyNode, self).__print__()
 	if self.groupby_clause is not None:
 	    self.groupby_clause.__print__()
@@ -660,6 +679,11 @@ class OrderbyNode(Node):
     def genColumnIndex(self):
 	self.child.genColumnIndex()
 
+    def toOp(self):
+	ret_op = op.SpjOp()
+	ret_op.map_phase.append(self)
+	ret_op.reduce_phase.append(self)
+
     def __print__(self):
 	print "OrderbyNode:"
 	super(OrderbyNode, self).__print__()
@@ -684,7 +708,7 @@ class JoinNode(Node):
     def adjustIndex(self, exp_list, table_name):
 	filter_name = ""
 	if table_name in self.left_child.table_list or table_name == "LEFT":
-	    fileter_name = "LEFT"
+	    filter_name = "LEFT"
 	else:
 	    filter_name = "RIGHT"
 	
@@ -765,6 +789,8 @@ class JoinNode(Node):
 	super(JoinNode, self).genTableName()
 	if self.is_explicit is True:
 	    self.join_condition.on_condition_exp.genTableName(self)
+	else:
+	    self.join_condition.where_condition_exp.genTableName(self)
 	self.left_child.genTableName()
 	self.right_child.genTableName()
 	
@@ -773,7 +799,8 @@ class JoinNode(Node):
 	    exp = self.where_condition.where_condition_exp
 	    left_exp = exp.booleanFilter(self.left_child, True)
 	    right_exp = exp.booleanFilter(self.right_child, True)
-		
+	    #DEBUG
+	    print exp.evaluate(), left_exp, right_exp, "PREDICATE_PUSHDOWN"
 	    if left_exp is not None:
 		if self.left_child.where_condition is None:
 		    self.left_child.where_condition = WhereConditionParser(None)
@@ -823,7 +850,7 @@ class JoinNode(Node):
 	    table = util.searchTable(child.table_alias)
 	    if table is None:
 		# TODO error
-		pass
+		return
 	    for col in table.column_list:
 		flag = False
 		for exp in exp_list:
@@ -855,7 +882,7 @@ class JoinNode(Node):
 	right_select = None
 	self.table_list = []
 	join_exp = None
-	child_name = (_type and "LEFT" or "RIGHT")
+	child_name = (_type and "RIGHT" or "LEFT")
 	
 	if self.is_explicit is True:
 	    join_exp = self.join_condition.on_condition_exp
@@ -869,7 +896,7 @@ class JoinNode(Node):
 	    # generate the index of join key
 	    if join_exp is not None:
 		col_list = []
-		if isinstance(child, TableNode):					
+		if isinstance(child, SPNode) and isinstance(child.child, TableNode):					
 		    if self.is_explicit is True:
 			self.join_condition.on_condition_exp = self.join_condition.on_condition_exp.genIndex(child)
 			self.join_condition.on_condition_exp.getPara(col_list)
@@ -886,7 +913,7 @@ class JoinNode(Node):
 			self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
 		
 		# generate the index of select list
-	    for exp in self.select_list.exp_list:
+	    for exp in self.parent.select_list.exp_list:
 		if isinstance(exp, expression.Function):
 		    col_list = []
 		    exp.getPara(col_list)
@@ -895,12 +922,12 @@ class JoinNode(Node):
 		elif isinstance(exp, expression.Column):
 		    self.__genColumnIndex__(exp, exp_list, select_dic, self.table_list, child_name)
 	
-	if self.where_condition is not None:
-	    where_exp = self.where_condition.where_condition_exp
-	    col_list = []
-	    where_exp.getPara(col_list)
-	    for cal in col_list:
-		JoinNode.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
+	    if self.where_condition is not None:
+	        where_exp = self.where_condition.where_condition_exp
+	        col_list = []
+	        where_exp.getPara(col_list)
+	        for col in col_list:
+		    JoinNode.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
 		
     @staticmethod
     def __genColumnIndex__(col, exp_list, select_dic, table_list, table_name):
@@ -911,6 +938,11 @@ class JoinNode(Node):
 		if table_name not in table_list:
 		    table_list.append(table_name)
 		    break
+
+    def toOp(self):
+	ret_op = op.SpjOp()
+	ret_op.map_phase.append(self)
+	ret_op.reduce_phase.append(self)
 
     def __print__(self):
 	print "JoinNode:"
@@ -929,7 +961,8 @@ class JoinNodeList(Node):
     is_explicit = None
     join_info = None
     children_list = None
-	
+    parent = None
+
     def __init__(self):
 	super(JoinNodeList, self).__init__()
 		
@@ -971,7 +1004,8 @@ class JoinNodeList(Node):
 	        join_node.left_child.parent = join_node
 	        join_node.right_child = copy.deepcopy(child)
 	        join_node.right_child.parent = join_node
-	
+		join_node.parent = self.parent
+		
 	        for t in current_node.table_list:
 		    if t not in join_node.table_list:
 		        join_node.table_list.append(t)
@@ -1003,6 +1037,12 @@ class JoinNodeList(Node):
 		
         return current_node
 
+    def __print__(self):
+	print "JoinNodeList:"
+	super(JoinNodeList, self).__print__()
+	for node in self.children_list:
+	    node.__print__()
+
 class RootSelectNode(Node):
     from_list = None
     converted_from_list = None
@@ -1014,25 +1054,31 @@ class RootSelectNode(Node):
     def toInitialPlanTree(self, input, is_handler):
 	node = None
 	if input["type"] == "BaseTable":
-	    node = TableNode()
+	    node = SPNode()
 	    node.source = input
 	    node.is_handler = is_handler
-	    node.table_name = input["content"]
-	    node.table_alias = input["alias"]
-	    if is_handler:
+	    if node.is_handler:
 	        node.select_list = self.select_list
                 node.where_condition = self.where_condition
                 node.groupby_clause = self.groupby_clause
                 node.having_clause = self.having_clause
                 node.orderby_clause = self.orderby_clause
-	    if node.table_alias == "":
-		node.table_list.append(node.table_name)
+
+	    node.child = TableNode()
+	    node.child.table_name = input["content"]
+	    node.child.table_alias = input["alias"]
+	    if node.child.table_alias == "":
+		node.child.table_list.append(node.child.table_name)
 	    else:
-		node.table_list.append(node.table_alias)
-		node.table_alias_dic[node.table_alias] = node.table_name
+		node.child.table_list.append(node.child.table_alias)
+		node.child.table_alias_dic[node.child.table_alias] = node.child.table_name
 			
 	elif input["type"] == "SubQuery":
-	    node = SPNode()
+	    node = input["content"].toInitialQueryPlanTree()
+	    node.table_alias = input["alias"]
+	    if node.table_alias is not None and node.table_alias not in node.table_list:
+		node.table_list.append(node.table_alias)
+	    """node = SPNode()
 	    node.source = input
 	    node.is_handler = is_handler
 	    if is_handler:	
@@ -1045,9 +1091,9 @@ class RootSelectNode(Node):
 	    node.table_alias = input["alias"]
 	    if node.table_alias is not None and node.table_alias not in node.table_list:
 		node.table_list.append(node.table_alias)
-	
+	"""
 	elif input["type"] == "JoinClause":
-	    node = JoinNodeList()
+	    node = SPNode()
 	    node.source = input
 	    node.is_handler = is_handler
 	    if is_handler:
@@ -1056,16 +1102,20 @@ class RootSelectNode(Node):
                 node.groupby_clause = self.groupby_clause
                 node.having_clause = self.having_clause
                 node.orderby_clause = self.orderby_clause
+
+	    node.child = JoinNodeList()
+	    node.child.parent = node
 	    tmp_children_list = []
 	    for item in input["content"]:
 		child = self.toInitialPlanTree(item, False)
 		tmp_children_list.append(child)
-	    node.children_list = list(tmp_children_list)
-		
-	    node.is_explicit = True
-	    node.join_info = []
-	    node.join_info.append(input["jc_on_condition"])
-	    node.join_info.append(input["jc_jointype_list"])
+	    node.child.children_list = list(tmp_children_list)
+	    #node.select_list = self.select_list
+	    node.where_condition = self.where_condition
+	    node.child.is_explicit = True
+	    node.child.join_info = []
+	    node.child.join_info.append(input["jc_on_condition"])
+	    node.child.join_info.append(input["jc_jointype_list"])
 	
 	return node
 	
@@ -1076,29 +1126,33 @@ class RootSelectNode(Node):
 	    node = self.toInitialPlanTree(tmp_from_list[0], True)
 	
 	else:
-	    node = JoinNodeList()
+	    node = SPNode()
 	    node.select_list = self.select_list
 	    node.where_condition = self.where_condition
 	    node.groupby_clause = self.groupby_clause
 	    node.having_clause = self.having_clause
 	    node.orderby_clause = self.orderby_clause
-	
+	    
+	    node.child = JoinNodeList()
+	    node.child.parent = node
+	    #node.child.select_list = self.select_list
+	    node.child.where_condition = self.where_condition
 	    tmp_list = []
 	    for item in tmp_from_list:
 		converted_item = self.toInitialPlanTree(item, False)
 		tmp_list.append(converted_item)
 		for key in converted_item.table_alias_dic.keys():
-		    if key not in node.table_alias_dic.keys():
-			node.table_alias_dic[key] = converted_item.table_alias
+		    if key not in node.child.table_alias_dic.keys():
+			node.child.table_alias_dic[key] = converted_item.table_alias
 		
 		for table in converted_item.table_list:
-		    if table not in node.table_list:
-			node.table_list.append(table)
-	    node.children_list = list(tmp_list)
+		    if table not in node.child.table_list:
+			node.child.table_list.append(table)
+	    node.child.children_list = list(tmp_list)
 	
-	    node.is_explicit = False
-	    node.join_info = []
-	    node.join_info.append(self.where_condition)
+	    node.child.is_explicit = False
+	    node.child.join_info = []
+	    node.child.join_info.append(self.where_condition)
 		
 	return node
 
@@ -1215,4 +1269,25 @@ class RootSelectNode(Node):
 	    parser = ast.OnConditionParser(tmp_list)
 	    item_dic["on_condition"].append(parser)
 	    tmp_converted_from_list.append(item_dic)
+	
+def planTreeToMRQ(node):
+    mrq = node.toOp()
+    if isinstance(node, JoinNode):
+        if node.left_child is not None:
+            lchild_op = node.left_child.toOp()
+	    if lchild_op is not None
+		mrq.child_list.append(lchild_op)
+		lchild_op.parent = mrq
+	if node.right_child is not None:
+	    rchild_op = node.right_child.toOp()
+	    if rchild_op is not None:
+		mrq.child_list.append(rchild_op)
+		rchild_op.parent = mrq
+    else if isinstance(node, GroupbyNode) or isinstance(node, OrderbyNode) or isinstance(node, SPNode):
+	if node.child is not None:
+	    child_op = child.toOp()
+	    if child_op is not None:
+		mrq.child_list.append(child.toOp())
+		child_op.parent = mrq
+    return mrq
 	

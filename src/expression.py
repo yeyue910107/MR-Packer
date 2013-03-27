@@ -154,7 +154,7 @@ class Function(Expression):
 	
 	if not isinstance(self, Function):
 	    # TODO error
-	    pass
+	    return
 	if self.func_name == "IS":
 	    return None
 	if self.func_name in func_list:
@@ -205,7 +205,7 @@ class Function(Expression):
 	    if flag is True:
 		ret_exp = copy.deepcopy(self)
 		if rm_flag is True:
-			self.removePara()
+		    self.removePara()
 		return ret_exp
 	    else:
 		return None			
@@ -301,11 +301,11 @@ class Column(Expression):
     def genTableName(self, node):
 	if self.table_name != "":
 	    table = util.searchTable(self.table_name)
-	    if table is None:
-		table = util.searchTable(self.table_alias_dic[self.table_name])
+	    if table is None and self.table_name in node.table_alias_dic.keys():
+		table = util.searchTable(node.table_alias_dic[self.table_name])
 	    if table is None:
 		# TODO error
-		pass
+		return
 	    self.column_type = table.getColumnByName(self.column_name).column_type
 	    return
 	
@@ -317,7 +317,7 @@ class Column(Expression):
 		self.table_name = col.table_schema.table_name
 		self.column_type = col.table_schema.getColumnByName(self.column_name).column_type
 		return
-	    for key in self.table_alias_dic.keys():
+	    for key in node.table_alias_dic.keys():
 		if col.table_schema.table_name == self.table_alias_dic[key]:
 		    self.table_name = key
 		    self.column_type = col.table_schema.getColumnByName(self.column_name).column_type
@@ -339,7 +339,7 @@ class Column(Expression):
 		index = tmp_table.getColumnIndexByName(self.column_name)
 		new_exp = Column(self.table_name, index)
 		new_exp.column_name = int(new_exp.column_name)
-		new_exp.column_name = self.column_type
+		new_exp.column_type = self.column_type
 	else:
 	    tmp_column = util.searchColumn(self.column_name)
 	    tmp_table = None

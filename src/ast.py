@@ -76,6 +76,8 @@ class ASTreeNode:
 	rs_node = self.toRootSelectNode()
 	rs_node.processFromList()
 	pt = rs_node.toInitialQueryPlanTree()
+	#DEBUG
+	#pt.__print__()
 	pt = pt.genOrderby()
 	pt = pt.genGroupby()
 	pt = pt.toBinaryJoinTree()
@@ -149,7 +151,6 @@ class SelectListParser(ASTreeNodeParser):
 		    if fin_flag == True:
 			input_exp_list.append(token)
 		exp = exp_parser.parse(input_exp_list)
-		
 		# setup alias
 		# explicit: a AS b
 		if as_alias is not None:
@@ -195,8 +196,11 @@ class SelectListParser(ASTreeNodeParser):
 		
     def __print__(self):
 	print "select_list:"
-	print "exp_list: ", util.printExpList(self.exp_list)
-	print "exp_alias_dic: ", util.printExpAliasDic(self.exp_alias_dic)
+	print "exp_list: "
+	util.printExpList(self.exp_list)
+	print "exp_alias_dic: "
+	util.printExpAliasDic(self.exp_alias_dic)
+	return
 
 class OnConditionParser(ASTreeNodeParser):
     on_condition_exp = None
@@ -390,7 +394,8 @@ class GroupbyParser(ASTreeNodeParser):
 	return ret_str[:-2]
 
     def __print__(self):
-	print "groupby_list: ", util.printExpList(self.groupby_list)
+	print "groupby_list: "
+	util.printExpList(self.groupby_list)
 
 class OrderbyParser(ASTreeNodeParser):
     orderby_exp_list = None
@@ -439,7 +444,8 @@ class OrderbyParser(ASTreeNodeParser):
 	return ret_exp_list
 
     def __print__(self):
-	print "orderby_list: ", util.printExpList(self.orderby_list)
+	print "orderby_list: "
+	util.printExpList(self.orderby_list)
 
 def processSchemaFile(_schema):
 	global global_table_dic
@@ -500,5 +506,8 @@ def astToQueryPlan(schema, file):
     processSchemaFile(schema)
     root = fileToRoot(file)
     pt = root.toPlanTree()
-    pt.__print__()
+    #DEBUG
+    #pt.__print__()
     pt.postProcess()
+    pt.__print__()
+    return pt
