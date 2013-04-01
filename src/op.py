@@ -26,6 +26,9 @@ class Op(object):
     reduce_phase = None
     child_list = None
     parent = None
+    pk_dic = {}
+    map_output = {}
+    map_filter = {}
 
     def __init__(self):
 	self.id = []
