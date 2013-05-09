@@ -398,9 +398,16 @@ def genJoinReduceCode(node, left_name, fo):
     map_value_type = "Text"
     # TODO
 
+def isSelfJoin(node):
+    #TODO
+    return false
+
 def genOpCode(op, fo):
     line_buf = "line_buf"
     map_key_type = ""
+
+    # TODO
+    
     
     print >> fo,"\tpublic static class Map extends  Mapper<Object, Text, " + map_key_type + ", " + map_value_type + ">{\n"
     print >> fo, "\t\tprivate String filename;"
@@ -446,9 +453,154 @@ def genOpCode(op, fo):
 	    for map_node in op.map_phase:
 		if isinstance(map_node, node.GroupbyNode):
 		    # TODO
+		    if table_name in map_node.table_list and map_node.child.where_condition is not None:
+			where_exp = map_node.child.where_condition.where_condition_exp
+			print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
+			print >> fo, "\t\t\t\t\t\tdispatch.set(", op.map_phase.index(map_node),");"
 		elif isinstance(map_node, node.JoinNode):
-		    # TODO
+		    self_join_flag = isSelfJoin(map_node)
 		    if isinstance(map_node.left_child, node.SPNode):
-			# TODO
+			if table_name == map_node.left_child.table_name and map_node.left_child.where_condition is not None:
+			    where_exp = map_node.left_child.where_condition.where_condition_exp
+			    print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
+			    if self_join_flag is False:
+				print >> fo, "\t\t\t\t\t\tdispatch.set(" + op.map_phase.index(map_node) + ");"
+			    else:
+				print >> fo, "\t\t\t\t\t\tdispatch.set(", 16+op.map_phase.index(map_node), ");"
 		    if isinstance(map_node.right_child, node.SPNode):
-			# TODO
+			if table_name == map_node.right_child.table_name and map_node.right_child.where_condition is not None:
+			    where_exp = map_node.right_child.where_condition.where_condition_exp
+			    print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
+			    if self_join_flag is False:
+				print >> fo, "\t\t\t\t\t\tdispatch.set(" + op.map_phase.index(map_node) + ");"
+			    else:
+				print >> fo, "\t\t\t\t\t\tdispatch.set(", 16+op.map_phase.index(map_node), ");"
+
+	    print >> fo, "\t\t\t\t\tif (dispatch.isEmpty())"
+	    output = "\t\t\t\t\t\tcontext.write("
+	    output += "new " + map_key_type + "(" + map_key + ")"
+	    output += ", "
+	    output += "new " + map_value_type + "(" + str(tb_name_tag[table_name]) + "+\"||\"+" + map_value + ")"
+	    output += ");"
+	    print >> fo, output
+
+	    print >> fo, "\t\t\t\t\telse"
+	    output = "\t\t\t\t\t\tcontext.write("
+	    output += "new " + map_key_type + "(" + map_key + ")"
+	    output += ", "
+	    output += "new " + map_value_type + "(" + str(tb_name_tag[table_name]) + "+\"|\"+dispatch.toString()+\"|\"+" + map_value + ")"
+	    output += ");"
+	    print >> fo, output
+	    print >> fo, "\t\t\t\t}"
+	
+	else:
+	    output = "\t\t\t\tcontext.write("
+	    output += "new " + map_key_type + "(" + map_key + ")"
+	    output += ", "
+	    output += "new " + map_value_type + "(" + str(tb_name_tag[table_name]) + "+\"||\"+" + map_value + ")"
+	    output += ");"
+	    print >> fo, output
+
+	print >> fo, "\t\t\t}\n"
+
+    print >> fo, "\t\t}\n"
+    print >> fo, "\t}\n"
+
+    reduce_key_type = "NullWritable"
+    reduce_value_type = "Text"
+
+    print >> fo, "\tpublic static class Reduce extends Reducer<" + map_key_type + ", " + map_value_type + ", " + reduce_key_type + ", " + reduce_value_type + "> {\n"
+    print >> fo, "\t\tpublic void reduce(" + map_key_type + " key, Iterable<" + map_value_type + "> v, Context context) throws IOExceptiuon, InterruptedException {\n"
+    
+    print >> fo, "\t\t\tIterator values = v.iterator();"
+    print >> fo, "\t\t\tArrayList[] tmp_output = new ArrayList[" + str(len(op.reduce_phase)) + "];"
+    print >> fo, "\t\t\tfor (int i = 0; i < )" + str(len(op.reduce_phase)) + "; i++) {\n"
+    print >> fo, "\t\t\t\ttmp_output[i] = new ArrayList();"
+    print >> fo ,"\t\t\t}"
+
+    agg_buf = "result"
+    d_count_buf = "d_count_buf"
+    line_counter = "al_line"
+    left_array = "al_left"
+    right_array = "al_right"
+
+    print >> fo, "\t\t\tString tmp = \"\";"
+    for reduce_node in op.reduce_phase:
+	    reduce_node_index = str(op.reduce_phase.index(reduce_node))
+	if isinstance(reduce_node, node.GroupbyNode):
+	    gb_exp_list = []
+	    getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
+	    tmp_agg_buf = agg_buf + "_" + reduce_node_index
+	    tmp_count_buf = d_count_buf + "_" + reduce_node_index
+	    tmp_line_counter = line_counter + "_" + reduce_node_index
+
+	    print >> fo, "\t\t\tDouble[] " + tmp_agg_buf + " = new Double[" + str(len(gb_exp_list)) + "];"
+	    print >> fo, "\t\t\tArrayList[] " + tmp_count_buf + " = new ArrayList[" + str(len(gb_exp_list)) + "];"
+	    print >> fo, "\t\t\tint " + tmp_line_counter + " = 0;"
+	    print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(gb_exp_list)) + "; i++) {\n"
+	    print >> fo, "\t\t\t\t" + tmp_agg_buf + "[i] = 0.0;"
+	    print >> fo, "\t\t\t\t" + tmp_count_buf + "[i] = new ArrayList();"
+	    print >> fo, "\t\t\t}\n"
+
+	elif isinstance(reduce_node, node.JoinNode):
+	    tmp_left_array = left_array + "_" + reduce_node_index
+	    tmp_right_array = right_array + "_" + reduce_node_index
+	    print >> fo, "\t\t\tArrayList " + tmp_left_array + " = new ArrayList();"
+	    print >> fo, "\t\t\tArrayList " + tmp_right_array + " = new ArrayList();"
+
+    # iterate each value
+    print >> fo, "\t\t\twhile (values.hasNext()) {\n"
+    print >> fo, "\t\t\t\tString line = values.next().toString();"
+    print >> fo, "\t\t\t\tString dispatch = line.split(\"\\\|\")[1];"
+    print >> fo, "\t\t\t\ttmp = line.substring(2+dispatch.length()+1);"
+    print >> fo, "\t\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
+
+    for reduce_node in op.reduce_phase:
+	if reduce_node.child is None or isinstance(reduce_node.child, node.TableNode) is False:
+	    continue
+	reduce_node_index = str(op.reduce_phase.index(reduce_node))
+	if isinstance(reduce_node, node.GroupbyNode):
+	    tmp_agg_buf = agg_buf + "_" + reduce_node_index
+	    tmp_count_buf = d_count_buf + "_" + reduce_node_index
+	    tmp_line_counter = line_counter + "_" + reduce_node_index
+	    gb_exp_list = []
+	    getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
+	    table_name = reduce_node.child.table_name
+	    
+	    print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(table_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)){\n"
+
+	    for exp in gb_exp_list:
+		exp_index = str(gb_exp_list.index(exp))
+		if not isinstance(exp, expression.Function):
+		    # TODO error
+		    return
+		select_func_output = genSelectFunctionCode(exp, buf_dic)
+		agg_func = exp.getGroupbyFuncName()
+		if agg_func == "SUM" or agg_func == "AVG":
+		    print >> fo, "\t\t\t\t\t" + tmp_agg_buf + "[" + exp_index + "] += " + select_func_output + ";"
+		elif agg_func == "COUNT_DISTINCT":
+		    print >> fo, "\t\t\t\t\tif (" + tmp_count_buf + "[" + exp_index + "].contains(" + select_func_output + ") == false)"
+		    print >> fo, "\t\t\t\t\t\t" + tmp_count_buf + "[" + exp_index + "].add(" + select_func_output + ");"
+		elif agg_func == "MAX":
+		    print >> fo, "\t\t\t\t\tif (" tmp_line_counter + " == 0)"
+		    print >> fo, "\t\t\t\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = (double) " + select_func_output + ";"
+		    print >> fo, "\t\t\t\t\telse if (" + tmp_agg_buf + "[" + exp_index + "] > " + select_func_output + ")"
+		    print >> fo, "\t\t\t\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = (double) " + select_func_output + ";"
+		elif agg_func == "MIN":
+		    print >> fo, "\t\t\t\t\tif (" tmp_line_counter + " == 0)"
+		    print >> fo, "\t\t\t\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = (double) " + select_func_output + ";"
+		    print >> fo, "\t\t\t\t\telse if (" + tmp_agg_buf + "[" + exp_index + "] < " + select_func_output + ")"
+		    print >> fo, "\t\t\t\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = (double) " + select_func_output + ";"
+
+	    print >> fo, "\t\t\t\t\t" + tmp_line_counter + "++;"
+	    print >> fo, "\t\t\t\t}"
+
+	elif isinstance(reduce_node, node.JoinNode):
+	    self_join_flag = isSelfJoin(reduce_node)
+	    reduce_node_index = str(op.map_phase.index(reduce_node))
+	    tmp_left_array = left_array + "_" + reduce_node_index
+	    tmp_right_array = right_array + "_" + reduce_node_index
+	    if isinstance(reduce_node.left_child, node.JoinNode):
+		left_table_name = reduce_node.left_child.table_name
+	    else:
+	

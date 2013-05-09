@@ -29,6 +29,7 @@ class Op(object):
     pk_dic = {}
     map_output = {}
     map_filter = {}
+    reduce_filter = {}
 
     def __init__(self):
 	self.id = []
