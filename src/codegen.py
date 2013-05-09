@@ -406,8 +406,42 @@ def genOpCode(op, fo):
     line_buf = "line_buf"
     map_key_type = ""
 
-    # TODO
-    
+    # get op input tables
+    tb_name_tag = {}
+    index_name = {}
+
+    filename = fo.name.split(".java")[0]
+    [file_name, file_index] = filename.split("_")
+   
+    for child in op.child_list:
+	index = int(file_index) + op.child_list.index(node) + 1
+	tb_name = file_name + "_" + str(index)
+	index_name[index] = tb_name
+	op.pk_dic[tb_name] = copy.deepcopy(op.pk_dic[index])
+	del op.pk_dic[index]
+	for exp in op.pk_dic[tb_name][0]:
+	    exp.table_name = tb_name
+	exp_list = child.oc_list[-1].select_list.exp_list
+	tmp_exp_list = []
+	for exp in exp_list:
+	    tmp_index = exp_list.index(exp)
+	    new_exp = expression.Column(tb_name, tmp_index)
+	    new_exp.table_name = tb_name
+	    new_exp.column_name = int(new_exp.column_name)
+	    new_exp.column_type = exp.column_type
+	    tmp_exp_list.append(new_exp)
+
+	op.map_output[tb_name] = tmp_exp_list
+
+    # get map key value type
+    buf_dic = {}
+    i = 1
+    for tb in op.map_output.keys():
+	tb_name_tag[tb] = i
+	buf_dic[tb] = line_buf
+	map_key_type = getKeyValueType(op.pk_dic[tb][0])
+	i += 1
+    map_value_type = "Text"
     
     print >> fo,"\tpublic static class Map extends  Mapper<Object, Text, " + map_key_type + ", " + map_value_type + ">{\n"
     print >> fo, "\t\tprivate String filename;"
@@ -556,7 +590,7 @@ def genOpCode(op, fo):
     print >> fo, "\t\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
 
     for reduce_node in op.reduce_phase:
-	if reduce_node.child is None or isinstance(reduce_node.child, node.TableNode) is False:
+	if reduce_node is not in op.ic_list:
 	    continue
 	reduce_node_index = str(op.reduce_phase.index(reduce_node))
 	if isinstance(reduce_node, node.GroupbyNode):
@@ -567,7 +601,7 @@ def genOpCode(op, fo):
 	    getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
 	    table_name = reduce_node.child.table_name
 	    
-	    print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(table_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)){\n"
+	    print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)){\n"
 
 	    for exp in gb_exp_list:
 		exp_index = str(gb_exp_list.index(exp))
@@ -600,7 +634,66 @@ def genOpCode(op, fo):
 	    reduce_node_index = str(op.map_phase.index(reduce_node))
 	    tmp_left_array = left_array + "_" + reduce_node_index
 	    tmp_right_array = right_array + "_" + reduce_node_index
-	    if isinstance(reduce_node.left_child, node.JoinNode):
+	    if isinstance(reduce_node.left_child, node.TableNode):
 		left_table_name = reduce_node.left_child.table_name
 	    else:
+		if len(op.child_list) != 2:
+		    # TODO error
+		    return
+		left_table_name = index_name[op.child_list[0]]
+	    
+	    if_stat = "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[left_table_name]) + "' && (dispatch.length() == 0 || "
+	    if self_join_flag is False:
+		if_stat += "dispatch.indexOf(\"" + reduce_node_index + "\") == -1"
+	    else:
+		if_stat += "dispatch.indexOf(\"" + str(int(reduce_node_index)+16) + "\") == -1"
+	    if_stat += "))"
+	    print >> fo, if_stat
+	    print >> fo, "\t\t\t\t\t" + tmp_left_array + ".add(tmp);"
+
 	
+	    if isinstance(reduce_node.right_child, node.TableNode):
+		right_table_name = reduce_node.right_child.table_name
+	    else:
+		if len(op.child_list) != 2:
+		    # TODO error
+		    return
+		right_table_name = index_name[op.child_list[1]]
+	    
+	    if_stat = "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[right_table_name]) + "' && (dispatch.length() == 0 || "
+	    if self_join_flag is False:
+		if_stat += "dispatch.indexOf(\"" + reduce_node_index + "\") == -1"
+	    else:
+		if_stat += "dispatch.indexOf(\"" + str(int(reduce_node_index)+16) + "\") == -1"
+	    if_stat += "))"
+	    print >> fo, if_stat
+	    print >> fo, "\t\t\t\t\t" + tmp_right_array + ".add(tmp);"
+
+    print >> fo, "\t\t\t}"
+
+    print >> fo, "\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
+    for reduce_node in op.reduce_phase:
+	if reduce_node is not in ic_list:
+	    continue
+	reduce_node_index = str(op.reduce_phase.index(reduce_node))
+	if isinstance(reduce_node, node.GroupbyNode):
+	    tmp_agg_buf = agg_buf + "_" + reduce_node_index
+	    tmp_count_buf = d_count_buf + "_" + reduce_node_index
+	    tmp_line_counter = line_counter + "_" + reduce_node_index
+
+	    gb_exp_list = []
+	    getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
+	    for exp in gb_exp_list:
+		exp_index = gb_exp_list.index(exp)
+		if not isinstance(exp, expression.Function):
+		    # TODO error
+		    return
+		agg_func = str(exp.getGroupbyFuncName())
+		if agg_func == "AVG":
+		    print >> fo, "\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = " + tmp_agg_buf + "[" + exp_index + "] / " + tmp_line_counter + ";"
+		elif agg_func == "COUNT":
+		    print >> fo, "\t\t\t" + tmp_agg_buf + "[" + exp_index + "] = (double) " + tmp_line_counter + ";"
+		elif agg_func == "COUNT_DISTINCT":
+		    print >> fo, "\t\t\t", tmp_agg_buf + "[" + exp_index + "] = (double) " + tmp_count_buf + "[" + exp_index + "].size();"
+
+ 

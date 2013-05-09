@@ -26,6 +26,8 @@ class Op(object):
     reduce_phase = None
     child_list = None
     parent = None
+    ic_list = None	# input correlation nodes list
+    oc_list = None	# output correlation nodes list
     pk_dic = {}
     map_output = {}
     map_filter = {}
