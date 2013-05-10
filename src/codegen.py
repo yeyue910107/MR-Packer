@@ -696,4 +696,141 @@ def genOpCode(op, fo):
 		elif agg_func == "COUNT_DISTINCT":
 		    print >> fo, "\t\t\t", tmp_agg_buf + "[" + exp_index + "] = (double) " + tmp_count_buf + "[" + exp_index + "].size();"
 
- 
+ 	    # TODO
+	elif isinstance(reduce_node, node.JoinNode):
+	    tmp_left_array = left_array + "_" + reduce_node_index
+	    tmp_right_array = right_array + "_" + reduce_node_index
+	    buf_dic = {}
+	    tmp_left_buf = "left_buf_" + reduce_node_index
+	    tmp_right_buf = "right_buf_" + reduce_node_index
+	    reduce_value_type = "Text"
+
+	    if reduce_node.is_explicit:
+		join_type = reduce_node.join_type.upper()
+		if join_type == "LEFT":
+		    reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+		    print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_left_array + ".size(); i++) {"
+		    print >> fo, "\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(i)).split(\"\\\|\");"
+		    print >> fo, "\t\t\t\tif (" + tmp_right_array + ".size() > 0) {"
+		    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
+		    print >> fo, "\t\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
+		    if reduce_node.where_condition is not None:
+			exp = reduce_node.where_condition.where_condition_exp
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+		    print >> fo, "\t\t\t\t\t}"
+
+		    print >> fo, "\t\t\t\t} else {"
+		    new_list = []
+		    genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
+		    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+		    if reduce_node.where_condition is not None:
+			new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+		    print >> fo, "\t\t\t\t}"
+		    print >> fo, "\t\t\t}"
+  
+		elif join_type == "RIGHT":
+		    reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+		    print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
+		    print >> fo, "\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
+		    print >> fo, "\t\t\t\tif (" + tmp_left_array + ".size() > 0) {"
+		    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
+		    print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
+		    if reduce_node.where_condition is not None:
+			exp = reduce_node.where_condition.where_condition_exp
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+		    print >> fo, "\t\t\t\t\t}"
+
+		    print >> fo, "\t\t\t\t} else {"
+		    new_list = []
+		    genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
+		    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+		    if reduce_node.where_condition is not None:
+			new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+		    print >> fo, "\t\t\t\t}"
+		    print >> fo, "\t\t\t}"
+		
+		elif join_type == "FULL":
+		    reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+		    print >> fo, "\t\t\tif (" + tmp_left_array + ".size() > 0 && " + tmp_right_array + (".size() > 0) {")
+		    print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
+		    print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
+		    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
+		    print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
+		    if reduce_node.where_condition is not None:
+			exp = reduce_node.where_condition.where_condition_exp
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+		    print >> fo, "\t\t\t\t\t}"
+		    print >> fo, "\t\t\t\t}"
+
+		    print >> fo, "\t\t\t}  else if (" + tmp_left_array + ".size() > 0) {"
+		    print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_left_array + ".size(); i++) {"
+		    new_list = []
+		    genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
+		    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+		    if reduce_node.where_condition is not None:
+			new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+		    print >> fo, "\t\t\t\t}"
+
+		    print >> fo, "\t\t\t}  else if (" + tmp_right_array + ".size() > 0) {"
+		    print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_right_array + ".size(); i++) {"
+		    new_list = []
+		    genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
+		    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+		    if reduce_node.where_condition is not None:
+			new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
+			print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+			print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+			print >> fo, "\t\t\t\t\t\t}"
+		    else:
+			print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+		    print >> fo, "\t\t\t\t}"
+
+		    print >> fo, "\t\t\t}"
+
+	    else:
+		print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_left_array + ".size(); i++) {"
+		print >> fo, "\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(i)).split(\"\\\|\");"
+		print >> fo, "\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
+		print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
+		reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+		if reduce_node.where_condition is not None:
+		    exp = reduce_node.where_condition.where_condition_exp
+		    print >> fo, "\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + ") {"
+		    print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+		    print >> fo, "\t\t\t\t\t}"
+		else:
+		    print >> fo, "\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+		print >> fo, "\t\t\t\t}"
+		print >> fo, "\t\t\t}"
