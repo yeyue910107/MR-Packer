@@ -441,7 +441,7 @@ class TableNode(Node):
 	
     def genColumnIndex(self):
 	self.__genSelectIndex__()
-	aself.__genWhereIndex__()
+	self.__genWhereIndex__()
 
     def toOp(self):
 	return None
