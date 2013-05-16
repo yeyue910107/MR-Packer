@@ -834,3 +834,35 @@ def genOpCode(op, fo):
 
 		print >> fo, "\t\t\t\t}"
 		print >> fo, "\t\t\t}"
+
+	# TODO
+
+    types = { "map_key_type":map_key_type, "map_value_type":map_value_type, "reduce_key_type":reduce_key_type, "reduce_value_type":reduce_value_type }
+    genMainCode(op, fo, types, True)
+
+def genMainCode(op, fo, types, has_reduce):
+    print >> fo, "\tpublic int run(String[] args) throws Exception {\n"
+    job_name = fo.name.split(".java")[0]
+
+    print >> fo, "\t\tConfiguration conf = new Configuration();"
+    print >> fo, "\t\tJob job = new Job(conf, \"" + job_name + "\");"
+    print >> fo, "\t\tjob.setJarByClass(" + job_name + ".class);"
+    print >> fo, "\t\tjob.setMapOutputKeyClass(" + types["map_key_type"] + ".class);"
+    print >> fo, "\t\tjob.setMapOutputValueClass(" + types["map_value_type"] + ".class);"
+    print >> fo, "\t\tjob.setOutputKeyClass(" + types["reduce_key_type"] + ".class);"
+    print >> fo, "\t\tjob.setOutputValueClass(" + types["reduce_value_type"] + ".class);"
+    print >> fo, "setMapperClass(Map.class);"
+    if has_reduce:
+	print >> fo, "\t\tjob.setReduceClass(Reduce.class);"
+    input_num = len(op.map_output.keys())
+    for i in range(0, input_num):
+	print >> fo, "\t\tFileOutputFormat.addInputPath(job, new Path(args[" + str[i] + "]));"
+    print >> fo, "\t\tFileOutput.setOutputPath(job, new Path(args[" + str(input_num) + "]));"
+    print >> fo, "\t\treturn (job.waitForCompletion) ? 0 : 1);"
+    print >> fo, "\t}\n"
+
+    print >> fo, "\tpublic static void main(String[] args) throws Exception {\n"
+    print >> fo, "\t\tint res = ToolRunner.run(new Configuration(), new " + job_name + "(), args);"
+    print >> fo, "\t\tSystem.exit(res);"
+    print >> fo, "\t}\n"
+
