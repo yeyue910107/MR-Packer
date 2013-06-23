@@ -371,7 +371,7 @@ def genJoinWhere(exp, table_name):
 	    ret_exp = expression.Column("FALSE", "BOOLEAN")
     return ret_exp
 
-def genJoinReduceCode(node, left_name, fo):
+def genJoinCode(node, left_name, fo):
     line_buf = "line_buf"
     if node.select_list is None:
 	# TODO ERROR
@@ -836,6 +836,37 @@ def genOpCode(op, fo):
 		print >> fo, "\t\t\t}"
 
 	# TODO
+	for reduce_node in op.reduce_phase:
+	    if reduce_node not in op.oc_list:
+		continue
+	    if isinstance(reduce_node, node.GroupbyNode):
+		reduce_node_index = op.reduce_phase.index(reduce_node.child)
+		tmp_gb_input = "tmp_output[" + str(reduce_node_index) + "]"
+		gb_exp_list = []
+		getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
+		
+		key_len = len(reduce_node.groupby_clause.groupby_exp_list)
+		tmp_output_len = len(gb_exp_List)
+		tmp_gb_output = "tmp_gb_output_" + str(op.reduce_phase.index(reduce_node))
+		tmp_dc_output = "tmp_dc_output_" + str(op.reduce_phase.index(reduce_node))
+		tmp_count_output = "tmp_count_output_" + str(op.reduce_phase.index(reduce_node))
+		print >> fo, "\t\t\tHashtable<String, Double>[] " + tmp_gb_output + " = new Hashtable<String, Double>[" + str(tmp_output_len) + "]();"
+		print >> fo, "\t\t\tHashtable<String, ArrayList>[] " + tmp_dc_output + " = new Hashtable<String, ArrayList>[" + str(tmp_output_len) + "]();"
+		print >> fo, "\t\t\tHashtable<String, Integer>[] " + tmp_count_output + " = new Hashtable<String, Integer>[" + str(tmp_output_len) + "]();"
+		print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_output_len + "; i++) {"
+		print >> fo, "\t\t\t\t" + tmp_gb_output + "[i] = new Hashtable<String, Double>();"
+		print >> fo, "\t\t\t\t" + tmp_dc_output + "[i] = new Hashtable<String, ArrayList>();"
+		print >> fo, "\t\t\t\t" + tmp_count_output + "[i] = new Hashtable<String, Integer>();"
+		print >> fo, "\t\t\t}"
+		print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++) {"
+		print >> fo, "\t\t\t\tString[] tmp_buf = ((String)" + tmp_gb_input + ".get(i)).split(\"\\|\");"
+		
+		tmp_key = ""
+		for i in range(0, key_len):
+		    exp = gb_exp_list[i]
+		    func_name = 
+
+	
 
     types = { "map_key_type":map_key_type, "map_value_type":map_value_type, "reduce_key_type":reduce_key_type, "reduce_value_type":reduce_value_type }
     genMainCode(op, fo, types, True)
