@@ -894,11 +894,11 @@ def genOpCode(op, fo):
                         tmp = genSelectFuncCode(exp, buf_dict)
                         print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
                         print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
-                        print >>fo,"\t\t\t\t\t sum_tmp += " +tmp_gb_output+"[" +str(i)+"].get("+tmp_key+");"
-                        print >>fo,"\t\t\t\t\t"+tmp_gb_output+"["+str(i)+"].put("+tmp_key+", sum_tmp);"
-                        print >>fo,"\t\t\t\t}else{"
-                        print >>fo,"\t\t\t\t\t" + tmp_gb_output+"["+str(i)+"].put("+tmp_key+",(double)"+tmp+");";
-                        print >>fo,"\t\t\t\t}"
+                        print >> fo, "\t\t\t\t\t sum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");";
+                        print >> fo, "\t\t\t\t}"
                         print >> fo, "\t\t\t}"
                     elif func_name == "AVG":
                         tmp = genSelectFuncCode(exp, buf_dict)
