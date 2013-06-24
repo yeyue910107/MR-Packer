@@ -863,9 +863,101 @@ def genOpCode(op, fo):
 		
 		tmp_key = ""
 		for i in range(0, key_len):
+		    tmp_key += "tmp_buf[" + str[i] + "] + "
+		    tmp_key += "\"|\""
+		tmp_key = tmp_key[:-1]
+		
+		for i in range(0, tmp_output_len):
 		    exp = gb_exp_list[i]
-		    func_name = 
-
+		    func_name = exp.getGroupbyFuncName()
+		    if func_name == "MAX":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey("+tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tDouble max_tmp = (double)" + tmp  + ";"
+                        print >> fo, "\t\t\t\t\tif (max_tmp > " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", max_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "MIN":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tDouble min_tmp = (double)" + tmp +";"
+                        print >> fo, "\t\t\t\t\tif (min_tmp < " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", min_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "SUM": 
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
+                        print >>fo,"\t\t\t\t\t sum_tmp += " +tmp_gb_output+"[" +str(i)+"].get("+tmp_key+");"
+                        print >>fo,"\t\t\t\t\t"+tmp_gb_output+"["+str(i)+"].put("+tmp_key+", sum_tmp);"
+                        print >>fo,"\t\t\t\t}else{"
+                        print >>fo,"\t\t\t\t\t" + tmp_gb_output+"["+str(i)+"].put("+tmp_key+",(double)"+tmp+");";
+                        print >>fo,"\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "AVG":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
+                        print >> fo, "\t\t\t\t\tsum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
+                        print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ") + 1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + " ,count);"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", 1);"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] += 1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] = 1;"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[" + str(i) + "].keySet()){"
+                        print >> fo, "\t\t\t\tDouble count = (double) " + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                        print >> fo, "\t\t\t\tDouble avg = " + tmp_gb_output + "[" + str(i) + "].get(tmp_key)/count;"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), avg);"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "COUNT_DISTINCT":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_dc_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tif (!" + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").contains(" + tmp + ")){"
+                        print >> fo, "\t\t\t\t\t\tArrayList tmp_al = " + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").add(" + tmp + ");"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + ", tmp_al);"
+                        print >> fo, "\t\t\t\t\t}"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + "," + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_dc_output + "[" + str(i) + "].keySet()){"
+                        print >> fo, "\t\t\t\tDouble count = (double)" + tmp_dc_output + "[" + str(i) + "].get(tmp_key).size();"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output +"[" + str(i) + "].put(tmp_key.toString(), count);"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "COUNT":
+                        print >> fo, "\t\t\t\tif (" + tmp_count_output + "[" + str(i) + "].containsKey(" + tmp_key + ")){"
+                        print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ")+1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", count);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ",1);"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_count_output + "[" + str(i) + "].keySet()){"
+                        print >> fo, "\t\t\t\tDouble count = (double)" + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), count);"
+                        print >> fo, "\t\t\t}"
+                
+                print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[0].keySet()){"
+                print >> fo, "\t\t\t\tString[] tmp_buf = ((String) " + tmp_gb_input + ".get(0)).split(\"\\\|\");"
+                print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++){"
+                print >> fo, "\t\t\t\t\ttmp_buf = ((String) " + tmp_gb_input + ".get(i)).split(\"\\\|\");"
+                print >> fo, "\t\t\t\t\tif (((String)tmp_key).compareTo(" + tmp_key + ") == 0)"
+                print >> fo, "\t\t\t\t\t\tbreak;"
+                print >> fo, "\t\t\t\t}"
 	
 
     types = { "map_key_type":map_key_type, "map_value_type":map_value_type, "reduce_key_type":reduce_key_type, "reduce_value_type":reduce_value_type }
