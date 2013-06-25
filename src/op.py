@@ -32,6 +32,7 @@ class Op(object):
     map_output = {}
     map_filter = {}
     reduce_filter = {}
+    is_composite = False
 
     def __init__(self):
 	self.id = []
@@ -98,13 +99,13 @@ class Op(object):
 	    all_cost += child.getMRQCost()
 	return all_cost
 
-    def getLowCostMRQ(self, mrq, cost):
+    def getLowCostMRQ(self):
 	if len(self.child_list) == 0 and self.isBottom():
 	    print "FINDROOT_BEGIN"
 	    root_mrq = self.findRoot()
 	    root_mrq.__print__()
-	    if root_mrq.getMRQCost() < cost:
-		mrq = copyMRQ(root_mrq)
+	    #if root_mrq.getMRQCost() < cost:
+	    #	mrq = copyMRQ(root_mrq)
 	    print "FINDROOT_END"
 	    return
 	for child in self.child_list:

@@ -25,4 +25,6 @@ if __name__ == "__main__":
     schema = "../test/tpch.schema"
     pt = ast.astToQueryPlan(schema, _file)
     mrq = node.planTreeToMRQ(pt)
+    print mrq
+    #mrq.getLowCostMRQ()
     _file.close()

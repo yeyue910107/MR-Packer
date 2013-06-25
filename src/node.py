@@ -416,6 +416,7 @@ class SPNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.is_sp = True
 	ret_op.map_phase.append(self)
+	return ret_op
 
     def __print__(self):
 	print "SPNode:"
@@ -603,6 +604,7 @@ class GroupbyNode(Node):
 	ret_op = op.SpjeOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	return ret_op
 
     def __print__(self):
 	print "GroupbyNode:"
@@ -683,6 +685,7 @@ class OrderbyNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	return ret_op
 
     def __print__(self):
 	print "OrderbyNode:"
@@ -943,6 +946,7 @@ class JoinNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	return ret_op
 
     def __print__(self):
 	print "JoinNode:"
@@ -1274,20 +1278,20 @@ def planTreeToMRQ(node):
     mrq = node.toOp()
     if isinstance(node, JoinNode):
         if node.left_child is not None:
-            lchild_op = node.left_child.toOp()
-	    if lchild_op is not None
+            lchild_op = planTreeToMRQ(node.left_child)
+	    if lchild_op is not None:
 		mrq.child_list.append(lchild_op)
 		lchild_op.parent = mrq
 	if node.right_child is not None:
-	    rchild_op = node.right_child.toOp()
+	    rchild_op = planTreeToMRQ(node.right_child)
 	    if rchild_op is not None:
 		mrq.child_list.append(rchild_op)
 		rchild_op.parent = mrq
-    else if isinstance(node, GroupbyNode) or isinstance(node, OrderbyNode) or isinstance(node, SPNode):
+    elif isinstance(node, GroupbyNode) or isinstance(node, OrderbyNode) or isinstance(node, SPNode):
 	if node.child is not None:
-	    child_op = child.toOp()
+	    child_op = planTreeToMRQ(node.child)
 	    if child_op is not None:
-		mrq.child_list.append(child.toOp())
+		mrq.child_list.append(child_op)
 		child_op.parent = mrq
     return mrq
-	
+
