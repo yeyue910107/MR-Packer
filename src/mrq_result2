@@ -1,0 +1,315 @@
+<op.SpjeOp object at 0xb73fdacc> <op.SpjOp object at 0xb73fdb0c> <op.SpjeOp object at 0xb73fdbac> <op.SpjOp object at 0xb73fdc4c> <op.SpjOp object at 0xb73fdcec> <op.SpjOp object at 0xb73fdd8c>
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdbac> [3] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdf6c> [3, 5] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdbac> [3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdf4c> [3, 6] 1
+<op.SpjeOp object at 0xb73fdbac> [3] <op.SpjOp object at 0xb73fdb0c> [2] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdf6c> [2, 3] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74070cc> [2, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74071ec>]
+<op.SpjeOp object at 0xb74071ec> [2, 3, 5, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb74071ec> [2, 3, 5, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [2, 3, 5, 6, 4] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74070cc>]
+<op.SpjeOp object at 0xb74070cc> [2, 3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb74070cc> [2, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [2, 3, 5, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [2, 3, 5, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740730c>]
+<op.SpjeOp object at 0xb740730c> [2, 3, 5, 4, 6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdf6c> [2, 3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740732c> [2, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740730c>]
+<op.SpjeOp object at 0xb740730c> [2, 3, 6, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740730c> [2, 3, 6, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74072ac>]
+<op.SpjeOp object at 0xb74072ac> [2, 3, 6, 5, 4] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [2, 3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740732c> [2, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74072ac>]
+<op.SpjeOp object at 0xb74072ac> [2, 3, 6, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74072ac> [2, 3, 6, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74071cc>]
+<op.SpjeOp object at 0xb74071cc> [2, 3, 6, 4, 5] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb73fdf6c>]
+<op.SpjeOp object at 0xb73fdf6c> [2, 3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb73fdf6c> [2, 3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74072ac> [2, 3, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74071cc>]
+<op.SpjeOp object at 0xb74071cc> [2, 3, 4, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74071cc> [2, 3, 4, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740716c>]
+<op.SpjeOp object at 0xb740716c> [2, 3, 4, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74072ac>]
+<op.SpjeOp object at 0xb74072ac> [2, 3, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74072ac> [2, 3, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740716c>]
+<op.SpjeOp object at 0xb740716c> [2, 3, 4, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740716c> [2, 3, 4, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74071ec>]
+<op.SpjeOp object at 0xb74071ec> [2, 3, 4, 6, 5] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fdb0c>]
+<op.SpjOp object at 0xb73fdb0c> [2] CHILD_LIST:  [<op.SpjeOp object at 0xb73fdbac>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjeOp object at 0xb73fdbac> [3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjOp object at 0xb73fdb0c> [2] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdbac> [3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fde6c>]
+<op.SpjOp object at 0xb73fde6c> [2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fde6c>]
+<op.SpjOp object at 0xb73fde6c> [2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb74070cc>]
+<op.SpjeOp object at 0xb74070cc> [3, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fde6c>]
+<op.SpjOp object at 0xb73fde6c> [2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb73fdbac>]
+<op.SpjeOp object at 0xb73fdbac> [3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdbac> [3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fde6c>]
+<op.SpjOp object at 0xb73fde6c> [2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb74070cc>]
+<op.SpjeOp object at 0xb74070cc> [3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74070cc> [3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjOp object at 0xb73fde6c>]
+<op.SpjOp object at 0xb73fde6c> [2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb74071ec>]
+<op.SpjeOp object at 0xb74071ec> [3, 6, 5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjeOp object at 0xb73fdbac> [3] <op.SpjOp object at 0xb73fde6c> [2, 4] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740732c> [2, 4, 3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740716c>]
+<op.SpjeOp object at 0xb740716c> [2, 4, 3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740716c> [2, 4, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74070ac>]
+<op.SpjeOp object at 0xb74070ac> [2, 4, 3, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [2, 4, 3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [2, 4, 3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb74070ac>]
+<op.SpjeOp object at 0xb74070ac> [2, 4, 3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74070ac> [2, 4, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdacc> [1] CHILD_LIST:  [<op.SpjeOp object at 0xb740730c>]
+<op.SpjeOp object at 0xb740730c> [2, 4, 3, 6, 5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdb0c> [2] <op.SpjeOp object at 0xb73fdacc> [1] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdbac> [3] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74070ac> [3, 5] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdbac> [3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740730c> [3, 6] 1
+<op.SpjeOp object at 0xb73fdbac> [3] <op.SpjeOp object at 0xb73fdf6c> [1, 2] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740730c> [1, 2, 3] 1
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [1, 2, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74072ac> [1, 2, 3, 5, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb74072ac> [1, 2, 3, 5, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740744c> [1, 2, 3, 5, 6, 4] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740732c> [1, 2, 3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740732c> [1, 2, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740744c> [1, 2, 3, 5, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740744c> [1, 2, 3, 5, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740742c> [1, 2, 3, 5, 4, 6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740730c> [1, 2, 3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740744c> [1, 2, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740742c> [1, 2, 3, 6, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740742c> [1, 2, 3, 6, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74073cc> [1, 2, 3, 6, 5, 4] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740744c> [1, 2, 3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740744c> [1, 2, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74073cc> [1, 2, 3, 6, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74073cc> [1, 2, 3, 6, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74071ec> [1, 2, 3, 6, 4, 5] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb740730c> [1, 2, 3] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74073cc> [1, 2, 3, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74071ec> [1, 2, 3, 4, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74071ec> [1, 2, 3, 4, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74070cc> [1, 2, 3, 4, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74073cc> [1, 2, 3, 4] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74073cc> [1, 2, 3, 4] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74070cc> [1, 2, 3, 4, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74070cc> [1, 2, 3, 4, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74072ac> [1, 2, 3, 4, 6, 5] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb73fdf6c> [1, 2] CHILD_LIST:  [<op.SpjeOp object at 0xb73fdbac>, <op.SpjOp object at 0xb73fdc4c>]
+<op.SpjeOp object at 0xb73fdbac> [3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdc4c> [4] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdc4c> [4] <op.SpjeOp object at 0xb73fdf6c> [1, 2] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb73fdbac> [3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb740732c>]
+<op.SpjeOp object at 0xb740732c> [3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb740716c>]
+<op.SpjeOp object at 0xb740716c> [3, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb73fdbac>]
+<op.SpjeOp object at 0xb73fdbac> [3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb73fdbac> [3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb740716c>]
+<op.SpjeOp object at 0xb740716c> [3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740716c> [3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740730c> [1, 2, 4] CHILD_LIST:  [<op.SpjeOp object at 0xb74072ac>]
+<op.SpjeOp object at 0xb74072ac> [3, 6, 5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjeOp object at 0xb73fdbac> [3] <op.SpjeOp object at 0xb740730c> [1, 2, 4] 1
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb740732c> [1, 2, 4, 3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74070cc> [1, 2, 4, 3, 5] CHILD_LIST:  [<op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb74070cc> [1, 2, 4, 3, 5] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74070ac> [1, 2, 4, 3, 5, 6] CHILD_LIST:  []
+FINDROOT_END
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740732c> [1, 2, 4, 3] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>, <op.SpjOp object at 0xb73fdd8c>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+<op.SpjOp object at 0xb73fdd8c> [6] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdd8c> [6] <op.SpjeOp object at 0xb740732c> [1, 2, 4, 3] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb74070ac> [1, 2, 4, 3, 6] CHILD_LIST:  [<op.SpjOp object at 0xb73fdcec>]
+<op.SpjOp object at 0xb73fdcec> [5] CHILD_LIST:  []
+FINDROOT_END
+<op.SpjOp object at 0xb73fdcec> [5] <op.SpjeOp object at 0xb74070ac> [1, 2, 4, 3, 6] 1
+FINDROOT_BEGIN
+<op.SpjeOp object at 0xb740742c> [1, 2, 4, 3, 6, 5] CHILD_LIST:  []
+FINDROOT_END

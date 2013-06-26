@@ -28,7 +28,7 @@ class Op(object):
     parent = None
     ic_list = None	# input correlation nodes list
     oc_list = None	# output correlation nodes list
-    pk_dic = {}
+    pk_list = None
     map_output = {}
     map_filter = {}
     reduce_filter = {}
@@ -111,7 +111,7 @@ class Op(object):
 	for child in self.child_list:
 	    child.getLowCostMRQ()
 	    new_op = None
-	    for i in range(1, 5):
+	    for i in range(1, 2):
 		op1_child, op2_child = [], []
 	        new_op = Op.merge(child, self, i, op1_child, op2_child)
 		if new_op is not None:

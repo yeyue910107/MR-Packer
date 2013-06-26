@@ -32,6 +32,7 @@ class Node(object):
     table_list = []
     table_alias_dic = {}
     is_handler = None
+    pk = None
 
     def __init__(self):
         pass
@@ -190,7 +191,10 @@ class Node(object):
 	    self.where_condition.where_condition_exp = self.where_condition.where_condition_exp.genIndex(self)
 
     def toOp(self):
-	return None
+	pass
+
+    def getPartitionKey(self):
+	pass
 
     def postProcess(self):
 	self.genProjectList()
@@ -203,6 +207,9 @@ class Node(object):
 	#self.columnFilter()
 	#self.genTableName()
 	#self.genColumnIndex() 
+
+    def __getOriginalExp__(self, exp, flag):
+	pass
 
     def __print__(self):
 	if self.select_list is not None:
@@ -416,7 +423,19 @@ class SPNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.is_sp = True
 	ret_op.map_phase.append(self)
+	ret_op.pk_list = self.getPartitionKey().sort()
 	return ret_op
+
+    def getPartitionKey(self):
+	return self.child.getPartitionKey()
+
+    def __getOriginalExp__(self, exp, flag):
+	if not isinstance(exp, expression.Column):
+	    return exp
+	index = exp.column_name
+        tmp_exp = self.child.select_list.exp_list[index] 
+        new_exp = self.__getOriginalExp__(tmp_exp, False)
+        return new_exp
 
     def __print__(self):
 	print "SPNode:"
@@ -446,6 +465,16 @@ class TableNode(Node):
 
     def toOp(self):
 	return None
+
+    def getPartitionKey(self):
+	return []
+
+    def __getOriginalExp__(self, exp, flag):
+	if not isinstance(exp, expression.Column):
+	    return exp
+	new_exp = copy.deepcopy(exp)
+        new_exp.table_name = self.table_name
+        return new_exp
 
     def __print__(self):
 	print "TableNode:"
@@ -604,7 +633,29 @@ class GroupbyNode(Node):
 	ret_op = op.SpjeOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	ret_op.pk_list = self.getPartitionKey().sort()
 	return ret_op
+
+    def getPartitionKey(self):
+	ret_exp_list = []
+        gb_exp_list = []
+        for exp in self.groupby_clause.groupby_list:
+            new_exp = self.__getOriginalExp__(exp, False)
+            tmp = []
+            tmp.append(new_exp)
+            ret_exp_list.append(tmp)
+            gb_exp_list.append(new_exp)
+        
+        ret_exp_list.append(gb_exp_list)
+        return ret_exp_list
+
+    def __getOriginalExp__(self, exp, flag):
+	if not isinstance(exp, expression.Column):
+	    return exp
+	index = exp.column_name
+        tmp_exp = self.child.select_list.exp_list[index]
+        new_exp = copy.deepcopy(self.child.__getOriginalExp__(tmp_exp, False))
+        return new_exp
 
     def __print__(self):
 	print "GroupbyNode:"
@@ -685,7 +736,16 @@ class OrderbyNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	ret_op.pk_list = self.getPartitionKey().sort()
 	return ret_op
+
+    def getPartitionKey(self):
+	return []
+
+    def __getOriginalExp__(self, exp, flag):
+	if not isinstance(exp, expression.Column):
+	    return exp
+	return None
 
     def __print__(self):
 	print "OrderbyNode:"
@@ -747,31 +807,6 @@ class JoinNode(Node):
 			x.column_name = exp_list.index(exp)
 			break
 
-    def getPrimaryKey(self):
-	if self.join_condition is None:
-	    return None
-	
-	ret_exp_list = []
-	tmp_list = []
-	left_list = []
-	right_list = []
-	
-	if self.is_explicit:
-	    self.join_condition.on_condition_exp.getPara(tmp_list)
-	else:
-	    self.join_condition.where_condition_exp.getPara(tmp_list)
-	
-	for i in range(0, len(tmp_list)):
-	    new_exp = __trace_to_leaf(self, tmp_list[i], True)
-	    if tmp_list[i].table_name == "LEFT":
-		left_list.append(new_exp)
-	    else:
-		right_list.append(new_exp)
-	
-	ret_exp_list.append(left_list)
-	ret_exp_list.append(right_list)
-	return ret_exp_list
-	
     def setComposite(self, composite, node):
 	if self.left_child == node:
 	    self.left_composite = composite
@@ -946,7 +981,61 @@ class JoinNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
+	ret_op.pk_list = self.getPartitionKey().sort()
 	return ret_op
+
+    def getPartitionKey(self):
+	if self.join_condition is None:
+	    return None
+	
+	ret_exp_list = []
+	tmp_list = []
+	left_list = []
+	right_list = []
+	
+	if self.is_explicit:
+	    self.join_condition.on_condition_exp.getPara(tmp_list)
+	else:
+	    self.join_condition.where_condition_exp.getPara(tmp_list)
+	
+	for i in range(0, len(tmp_list)):
+	    new_exp = self.__getOriginalExp__(tmp_list[i], True)
+	    if tmp_list[i].table_name == "LEFT":
+		left_list.append(new_exp)
+	    else:
+		right_list.append(new_exp)
+	
+	ret_exp_list.append(left_list)
+	ret_exp_list.append(right_list)
+	return ret_exp_list
+
+    def __getOriginalExp__(self, exp, flag):
+	if not isinstance(exp, expression.Column):
+	    return exp
+	index = exp.column_name
+        table_name = exp.table_name
+        if table_name == "LEFT":
+            if flag and isinstance(self.left_child, TableNode):
+                tmp_exp = copy.deepcopy(exp)
+                tmp_exp.table_name = self.left_child.select_list.exp_list[0].table_name
+                new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp, False))
+            else:
+                index = exp.column_name
+                tmp_exp = self.left_child.select_list.tmp_exp_list[index]
+                new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp, False))
+        else:
+            if flag and isinstance(self.right_child, TableNode): 
+                tmp_exp = copy.deepcopy(exp)
+                tmp_exp.table_name = self.right_child.select_list.exp_list[0].table_name
+                new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
+            else:
+                index = exp.column_name
+		print index
+		print self.right_child.select_list.exp_list
+                tmp_exp = self.right_child.select_list.exp_list[index]
+                new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
+
+        return new_exp
 
     def __print__(self):
 	print "JoinNode:"

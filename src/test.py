@@ -26,5 +26,5 @@ if __name__ == "__main__":
     pt = ast.astToQueryPlan(schema, _file)
     mrq = node.planTreeToMRQ(pt)
     print mrq
-    #mrq.getLowCostMRQ()
+    mrq.getLowCostMRQ()
     _file.close()

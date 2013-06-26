@@ -22,6 +22,8 @@ class Rule:
 	self.rule_type = rule_type
 
     def checkRule(self, op1, op2):
+	if op1.pk_list != op2.pk_list:
+	    return False
 	if self.rule_type == 1:
 	    if isinstance(op1, op.SpjOp) and isinstance(op2, op.Op):
 		return True
