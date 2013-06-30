@@ -59,6 +59,7 @@ class ASTreeNode:
 		rs_node.having_clause = WhereConditionParser(child)
 	    elif child.token_name == "GROUP_BY":
 		rs_node.groupby_clause = GroupbyParser(child)
+		print "groupby_clause:", rs_node.groupby_clause.groupby_list
 	    elif child.token_name == "ORDER_BY":
 		rs_node.orderby_clause = OrderbyParser(child)
 	    elif child.token_name == "FROM":

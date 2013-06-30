@@ -45,6 +45,7 @@ class Node(object):
 	gb.select_list = copy.deepcopy(self.select_list)
 	self.groupby_clause = None
         if self.groupby_clause is not None:
+	    print "111111"
             gb.groupby_clause = self.groupby_clause
             if self.having_clause is not None:
                 gb.having_clause = self.having_clause
@@ -1246,6 +1247,10 @@ class RootSelectNode(Node):
 	    node.child.children_list = list(tmp_children_list)
 	    #node.select_list = self.select_list
 	    node.where_condition = self.where_condition
+            '''node.child.groupby_clause = self.groupby_clause
+            node.child.having_clause = self.having_clause
+            node.child.orderby_clause = self.orderby_clause'''
+	    
 	    node.child.is_explicit = True
 	    node.child.join_info = []
 	    node.child.join_info.append(input["jc_on_condition"])
