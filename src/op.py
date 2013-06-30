@@ -43,7 +43,7 @@ class Op(object):
 
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):
-	print op1, op1.id, op2, op2.id, rule_type
+	#print op1, op1.id, op2, op2.id, rule_type
 	new_op = strategy.Rule(rule_type).merge(op1, op2)
 	if new_op is None:
 	    return None
@@ -101,12 +101,12 @@ class Op(object):
 
     def getLowCostMRQ(self):
 	if len(self.child_list) == 0 and self.isBottom():
-	    print "FINDROOT_BEGIN"
-	    root_mrq = self.findRoot()
-	    root_mrq.__print__()
+	    #print "FINDROOT_BEGIN"
+	    #root_mrq = self.findRoot()
+	    #root_mrq.__print__()
 	    #if root_mrq.getMRQCost() < cost:
 	    #	mrq = copyMRQ(root_mrq)
-	    print "FINDROOT_END"
+	    #print "FINDROOT_END"
 	    return
 	for child in self.child_list:
 	    child.getLowCostMRQ()

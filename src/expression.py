@@ -151,16 +151,19 @@ class Function(Expression):
     def booleanFilter(self, node, rm_flag):
 	ret_exp = None
 	func_list = ["AND", "OR"]
-	
 	if not isinstance(self, Function):
 	    # TODO error
 	    return
+	# debug
+	print "self", self.func_name
 	if self.func_name == "IS":
 	    return None
 	if self.func_name in func_list:
 	    exp_list = []
 	    flag = True
 	    for exp in self.para_list:
+		# debug
+		print "para_list", exp.func_name
 		if exp.func_name == "OR":
 		    tmp_exp = exp.booleanFilter(node, False)
 		else:

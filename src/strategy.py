@@ -22,6 +22,7 @@ class Rule:
 	self.rule_type = rule_type
 
     def checkRule(self, op1, op2):
+	print "check rule:", op1.pk_list, op2.pk_list
 	if op1.pk_list != op2.pk_list:
 	    return False
 	if self.rule_type == 1:
@@ -50,13 +51,13 @@ class Rule:
 	    new_op = op.SpjeOp()
 	else:
 	    new_op = op.SpjOp()
-	return new_op
-	print new_op
-	print isinstance(op1, op.SpjeOp), isinstance(op2, op.Op)
+	#return new_op
+	#print new_op
+	#print isinstance(op1, op.SpjeOp), isinstance(op2, op.Op)
 	if self.checkRule(op1, op2) is False:
 	    return None
 	    # TODO ERROR
-	print new_op
+	#print new_op
 	if self.rule_type == 1:
 	    new_op.map_phase.append(op1.map_phase)
 	    new_op.map_phase.append(op2.map_phase)
