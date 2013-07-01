@@ -295,7 +295,7 @@ class Column(Expression):
 
     def evaluate(self):
 	if self.table_name == "":
-	    return "UNKNOWN." + self.column_name
+	    return "UNKNOWN." + str(self.column_name)
 	return str(self.table_name) + "." + str(self.column_name)
 
     def setFuncObj(self, func_obj):
