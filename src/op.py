@@ -101,12 +101,12 @@ class Op(object):
 
     def getLowCostMRQ(self):
 	if len(self.child_list) == 0 and self.isBottom():
-	    #print "FINDROOT_BEGIN"
-	    #root_mrq = self.findRoot()
-	    #root_mrq.__print__()
+	    print "FINDROOT_BEGIN"
+	    root_mrq = self.findRoot()
+	    root_mrq.__printAll__()
 	    #if root_mrq.getMRQCost() < cost:
 	    #	mrq = copyMRQ(root_mrq)
-	    #print "FINDROOT_END"
+	    print "FINDROOT_END"
 	    return
 	for child in self.child_list:
 	    child.getLowCostMRQ()
@@ -119,9 +119,19 @@ class Op(object):
 		    Op.detach(new_op, child, self, op1_child, op2_child)
 
     def __print__(self):
-	print self, self.id, "CHILD_LIST: ", self.child_list
+	print self, self.id
+	print "map:"
+	for node in self.map_phase:
+	    print node.name
+	print "reduce:"
+	for node in self.reduce_phase:
+	    print node.name
+	print "CHILD_LIST: ", self.child_list
+
+    def __printAll__(self):
+	self.__print__()
 	for child in self.child_list:
-	    child.__print__()
+	    child.__printAll__()
 
 class SpjOp(Op):
     is_sp = False

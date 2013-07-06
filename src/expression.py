@@ -73,7 +73,7 @@ class Function(Expression):
 		new_list.append(new)
 	    else:
 		new_list.append(old)
-	self.para_list = new_list
+	self.setParaList(new_list)
 
     def genTableName(self, node):
 	col_list = []
@@ -87,7 +87,7 @@ class Function(Expression):
 		col_list.append(para)
 	    elif isinstance(para, Function):
 		para.getPara(col_list)
-
+    
     def genIndex(self, node):
 	para_list = self.para_list
 	new_para_list = []
@@ -125,10 +125,16 @@ class Function(Expression):
 	    col_list = []
 	    self.getPara(col_list)
 	    for col in col_list:
-		if col.table_name in node.table_list or col.table_name in node.table_alias_dic.values() and len(filter(lambda x:x.compare(col), new_list)) == 0:
-		    tmp = copy.deepcopy(col)
-		    new_list.append(tmp)
-		    new_dic[tmp] = None
+		if col.table_name in node.table_list or col.table_name in node.table_alias_dic.values():
+		    flag = False
+		    for tmp in new_list:
+			if tmp.table_name == col.table_name and tmp.column_name == col.column_name:
+			    flag = True
+			    break
+		    if flag is False:
+		        tmp = copy.deepcopy(col)
+		        new_list.append(tmp)
+		        new_dic[tmp] = None
 				
     def hasGroupbyFunc(self):
 	flag = False
@@ -160,19 +166,22 @@ class Function(Expression):
 	    return None
 	if self.func_name in func_list:
 	    exp_list = []
-	    flag = True
+	    tmp_flag = True
 	    for exp in self.para_list:
-		# debug
-		print "para_list", exp.func_name
-		if exp.func_name == "OR":
-		    tmp_exp = exp.booleanFilter(node, False)
-		else:
-		    tmp_exp = exp.booleanFilter(node, rm_flag)
-		if self.func_name == "OR" and tmp_exp is None:
-		    flag = False
-		if tmp_exp is not None:
-		    exp_list.append(tmp_exp)
-	    if flag is False or len(exp_list) == 0:
+		if isinstance(exp, Function):
+		    # debug
+		    print "para_list", exp.func_name
+		    if self.func_name == "OR":
+		        tmp_exp = exp.booleanFilter(node, False)
+		    else:
+		        tmp_exp = exp.booleanFilter(node, rm_flag)
+		    print "tmp_exp", tmp_exp
+		    if self.func_name == "OR" and tmp_exp is None:
+		        tmp_flag = False
+		    if tmp_exp is not None:
+		        exp_list.append(tmp_exp)
+
+	    if tmp_flag is False or len(exp_list) == 0:
 		return None
 	    elif len(exp_list) == 1:
 		ret_exp = copy.deepcopy(exp_list[0])
@@ -186,13 +195,16 @@ class Function(Expression):
 		ret_exp = Function(self.func_name, exp_list)
 		return ret_exp
 	else:
-	    flag = True
+	    exp_flag = True
 	    for exp in self.para_list:
+		print exp.evaluate()
 		tmp_flag = False
 		if isinstance(exp, Column):
+		    print node.table_list
 		    for table in node.table_list:
-			if table == exp.table_name and util.isColumnInTable(exp.column_name, exp):
+			if table == exp.table_name and util.isColumnInTable(exp.column_name, table):
 			    tmp_flag = True
+			    print "tmp_flag is true"
 			    break
 		    for key in node.table_alias_dic.keys():
 			if key == exp.table_name and isColumnInTable(exp.column_name, node.table_alias_dic[key]):
@@ -203,9 +215,9 @@ class Function(Expression):
 		else:
 		    if exp.booleanFilter(node, False) is not None:
 			tmp_flag = True
-		flag = tmp_flag and flag
-	
-	    if flag is True:
+		exp_flag = tmp_flag and exp_flag
+	    print "exp_flag is ", exp_flag, "remove_flag is ", rm_flag
+	    if exp_flag is True:
 		ret_exp = copy.deepcopy(self)
 		if rm_flag is True:
 		    self.removePara()
@@ -249,11 +261,20 @@ class Function(Expression):
 		    new_dic[new_exp] = None
 
     def removePara(self):
+	print "REMOVE PARA"
+	print self.evaluate()
+	print self.func_obj.evaluate()
 	exp = self.func_obj
+	new_list = []
 	if not isinstance(exp, Function) or exp == self:
 	    return
-	new_list = filter(lambda x:x != self, self.para_list)
-	exp.para_list = new_list
+	#new_list = filter(lambda x:x != self, self.para_list)
+	for item in exp.para_list:
+	    if item == self:
+		continue
+	    else:
+		new_list.append(item)
+	exp.setParaList(new_list)
 
     def genJoinKey(self):
 	ret_exp = None
@@ -309,6 +330,7 @@ class Column(Expression):
 	    if table is None:
 		# TODO error
 		return
+	    print table.table_name, self.column_name
 	    self.column_type = table.getColumnByName(self.column_name).column_type
 	    return
 	
@@ -357,7 +379,10 @@ class Column(Expression):
 	    new_exp.column_name = int(new_exp.column_name)
 	    new_exp.column_name = self.column_type
 	return new_exp
-	
+
+    def genJoinKey(self):
+	return None
+
     def hasGroupbyFunc(self):
 	return False
 
@@ -367,6 +392,7 @@ class Column(Expression):
 	return False
 
     def selectListFilter(self, select_list, node, new_dic, new_list):
+	print node.table_list, node.table_alias_dic
 	for table in node.table_list:
 	    if table == self.table_name:
 		if util.isColumnInTable(self.column_name, table):
@@ -407,6 +433,9 @@ class Constant(Expression):
 
     def setFuncObj(self, func_obj):
 	return
+
+    def genJoinKey(self):
+	return None
 
     def compare(self, exp):
 	if isinstance(exp, Constant) and self.const_type == exp.const_type and self.const_value == exp.const_value:

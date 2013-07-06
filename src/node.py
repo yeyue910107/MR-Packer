@@ -21,6 +21,8 @@ import copy
 import schema
 import op
 
+op_id = 0
+
 class Node(object):
     source = None
     select_list = None
@@ -34,7 +36,7 @@ class Node(object):
     is_handler = None
     pk = None
 
-    def __init__(self):
+    def __init__(self, name="node"):
         self.table_list = []
 	self.table_alias_dic = {}
 
@@ -198,18 +200,22 @@ class Node(object):
 	pass
 
     def postProcess(self):
+	#pass
 	self.genProjectList()
 	#if self.checkSchema() is False:
 	    # TODO error
-	#    pass
+	    # pass
 	self.processSelectStar()
+	#print "gen table name"
 	self.genTableName()
-	#self.predicatePushdown()
+	#print "predicate"
+	self.predicatePushdown()
+	#print "column filter"
 	self.columnFilter()
 	self.genTableName()
 	self.genColumnIndex() 
 
-    def __getOriginalExp__(self, exp):
+    def __getOriginalExp__(self, exp, flag):
 	pass
 
     def __print__(self):
@@ -227,7 +233,8 @@ class SPNode(Node):
     in_table_list = []
     in_table_alias_dic = {}
 
-    def __init__(self):
+    def __init__(self, name="sp"):
+	self.name = name
         super(SPNode, self).__init__()
 
     def genGroupby(self):
@@ -262,9 +269,9 @@ class SPNode(Node):
 	    util.global_table_dic[tmp_name] = tmp_schema
 		
     def __genProjectList__(self, project_list):
-	if self.select_list is None:
+	if self.child.select_list is None:
 	    return
-	select_list = self.select_list
+	select_list = self.child.select_list
 	table_list = self.in_table_list
 	table_alias_dic = self.in_table_alias_dic
 	exp_dic = select_list.exp_alias_dic
@@ -314,13 +321,17 @@ class SPNode(Node):
 	self.child.genTableName()
 
     def predicatePushdown(self):
+	print "spnode, predicate"
+	'''
 	new_exp = None
+	print self.select_list.exp_list, self.child.select_list
 	if self.where_condition is not None:
 	    tmp_exp = copy.deepcopy(self.where_condition.where_condition_exp)
+	    print "tmp_exp", tmp_exp.evaluate()
 	    if tmp_exp is not None:
 		col_list = []
 		tmp_exp.getPara(col_list)
-		select_dic = self.select_list.exp_alias_dic
+		select_dic = self.child.select_list.exp_alias_dic
 		for item in col_list:
 		    flag = False
 		    for key in select_dic.keys():
@@ -359,24 +370,35 @@ class SPNode(Node):
 		    if flag is False:
 			# TODO error
 			pass
-		"""	
+		
 		child_exp = tmp_exp.booleanFilter(self, True)
 		if child_exp is not None:
+		    print "child_exp", child_exp.evaluate()
 		    if self.child.where_condition is None:
-			self.child.where_condition = WhereConditionParser(None)
+			self.child.where_condition = ast.WhereConditionParser(None)
 			self.child.where_condition.where_condition_exp = copy.deepcopy(child_exp)
 		    else:
 			new_exp = copy.deepcopy(child_exp)
 			para_list = []
-			para_list.append(self.child.where_condition_exp)
+			para_list.append(self.child.where_condition.where_condition_exp)
 			para_list.append(new_exp)
-			self.child.where_condition.where_condition_exp = expression.Function("AND", para_list)"""
-	#self.where_condition = None
+			self.child.where_condition.where_condition_exp = expression.Function("AND", para_list)
+	self.where_condition = None'''
 	self.child.predicatePushdown()
+
+    def updateSPList(self):
+	if isinstance(self.parent, JoinNode):
+	    if self.is_explicit:
+		join_exp = self.parent.join_condition.on_condition_exp
+	    else:
+		join_exp = self.parent.join_condition.where_condition_exp
+	    where_exp = self.parent.where_condition.where_condition_exp
 	
+
     def columnFilter(self):
 	new_select_dic = {}
 	new_exp_list = []
+	# if child is table node
 	if self.select_list is None or self.child.select_list is None:
 	    # TODO error
 	    return
@@ -395,7 +417,7 @@ class SPNode(Node):
 			    new_exp_list.append(child_exp)
 			    new_select_dic[child_exp] = None
 			    break
-		    elif isinstance(child_exp, expression.Function) and child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_List:
+		    elif isinstance(child_exp, expression.Function) and child_exp_dic[child_exp] == exp.column_name and child_exp not in new_exp_list:
 			new_exp_list.append(child_exp)
 			new_select_dic[child_exp] = None
 			break
@@ -404,11 +426,14 @@ class SPNode(Node):
 		exp.getPara(col_list)
 		for col in col_list:
 		    col.table_name = ""
-	    new_exp_list.append(exp)
-	    new_select_dic[exp] = None
+	    else:
+		new_exp_list.append(exp)
+		new_select_dic[exp] = None
 	
 	self.child.select_list.exp_list = new_exp_list
 	self.child.select_list.exp_alias_dic = new_select_dic
+	print "sp column filter"
+	util.printExpList(self.child.select_list.exp_list)
 	self.child.columnFilter()
 	
     def processSelectStar(self):
@@ -421,29 +446,33 @@ class SPNode(Node):
 	self.child.genColumnIndex()
 
     def toOp(self):
+	global op_id
+	op_id = op_id + 1
 	ret_op = op.SpjOp()
+	ret_op.id = [op_id]
 	ret_op.is_sp = True
 	ret_op.map_phase.append(self)
-	ret_op.pk_list = self.getPartitionKey()
+	#ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
-	print "SPNode, PK_LIST:", ret_op.pk_list
+	print "SPNode, PK_LIST:"
+	util.printExpList(ret_op.pk_list)
 	return ret_op
 
     def getPartitionKey(self):
 	return self.child.getPartitionKey()
 
-    def __getOriginalExp__(self, exp):
+    def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
 	    return exp
-	if self.child.select_list is None:
-	    return self.child.__getOriginalExp__(exp)
+	if isinstance(self.child, TableNode):
+	    return self.child.__getOriginalExp__(exp, flag)
 	index = exp.column_name
-        tmp_exp = self.child.select_list.exp_list[index] 
-        new_exp = copy.deepcopy(self.__getOriginalExp__(tmp_exp))
+        tmp_exp = self.child.select_list.exp_list[index]
+        new_exp = copy.deepcopy(self.child.__getOriginalExp__(tmp_exp, False))
         return new_exp
 
     def __print__(self):
-	print "SPNode:"
+	print "SPNode:----------"
 	super(SPNode, self).__print__()
 	#print "table_list: ", self.table_list, "table_alias_dic: ", self.table_alias_dic
 	if self.child is not None:
@@ -455,7 +484,8 @@ class TableNode(Node):
     table_name = None
     table_alias = None
 
-    def __init__(self):
+    def __init__(self, name="table"):
+	self.name = name
         super(TableNode, self).__init__()
 		
     def checkSchema(self):
@@ -474,7 +504,7 @@ class TableNode(Node):
     def getPartitionKey(self):
 	return []
 
-    def __getOriginalExp__(self, exp):
+    def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
 	    return exp
 	new_exp = copy.deepcopy(exp)
@@ -482,7 +512,7 @@ class TableNode(Node):
         return new_exp
 
     def __print__(self):
-	print "TableNode:"
+	print "TableNode:----------"
 	super(TableNode, self).__print__()
 	print "table_name: ", self.table_name, "table_alias: ", self.table_alias
 
@@ -491,7 +521,8 @@ class GroupbyNode(Node):
     parent = None
     composite = None
 
-    def __init__(self):
+    def __init__(self, name="groupby"):
+	self.name = name
         super(GroupbyNode, self).__init__()
 
     def toBinaryJoinTree(self):
@@ -516,6 +547,8 @@ class GroupbyNode(Node):
 	self.child.genTableName()
 
     def predicatePushdown(self):
+	print "groupby, predicate"
+	print self.child.select_list
 	if self.where_condition is not None:
 	    new_where = self.where_condition.where_condition_exp.groupbyWhereFilter()
 	    if new_where is not None:
@@ -545,6 +578,7 @@ class GroupbyNode(Node):
 	self.child.predicatePushdown()
 		
     def columnFilter(self):
+	print "groupby filter"
 	new_select_dic = {}
 	new_exp_list = []
 	if self.groupby_clause is None:
@@ -555,9 +589,10 @@ class GroupbyNode(Node):
 	    if isinstance(exp, expression.Function):
 		col_list = []
 		exp.getPara(col_list)
-		__addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
+		for col in col_list:
+		    GroupbyNode.__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
 	    elif isinstance(exp, expression.Column):
-		__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
+		GroupbyNode.__addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
 	    else:
 		new_exp = copy.deepcopy(exp)
 		new_exp_list.append(new_exp)
@@ -567,13 +602,13 @@ class GroupbyNode(Node):
 	    col_list = []
 	    __getGroupbyList__(self.where_condition.where_condition_exp, col_list)
 	    for col in col_list:
-		__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
+		GroupbyNode.__addExpToChildSelectList__(col, new_exp_list, new_select_dic)
 	
 	if self.select_list is not None:
 	    for exp in self.select_list.exp_list:
 		if isinstance(exp, expression.Column):
 		    GroupbyNode.__addExpToChildSelectList__(exp, new_exp_list, new_select_dic)
-		    new_select_dic[new_exp] = self.select_list.exp_alias_dic[exp]
+		    #new_select_dic[exp] = self.select_list.exp_alias_dic[exp]
 		elif isinstance(exp, expression.Function):
 		    col_list =  []
 		    exp.getPara(col_list)
@@ -635,19 +670,33 @@ class GroupbyNode(Node):
 		break
 
     def toOp(self):
+	global op_id
+	op_id = op_id + 1
 	ret_op = op.SpjeOp()
+	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	ret_op.pk_list = self.getPartitionKey()
+	#ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
-	print "GroupbyNode, PK_LIST:", ret_op.pk_list
+	print "GroupbyNode, PK_LIST:"
+	util.printExpList(ret_op.pk_list)
 	return ret_op
 
     def getPartitionKey(self):
 	ret_exp_list = []
+        for exp in self.groupby_clause.groupby_list:
+            new_exp = self.__getOriginalExp__(exp, False)
+            if new_exp is not None and new_exp not in ret_exp_list:
+		ret_exp_list.append(new_exp)
+	    if isinstance(new_exp, expression.Column):
+	        print "PartitionKey:", new_exp.table_name, new_exp.column_name
+        return ret_exp_list
+
+    '''def getPartitionKey(self):
+	ret_exp_list = []
         gb_exp_list = []
         for exp in self.groupby_clause.groupby_list:
-            new_exp = self.__getOriginalExp__(exp)
+            new_exp = self.__getOriginalExp__(exp, False)
             tmp = []
             tmp.append(new_exp)
 	    if isinstance(new_exp, expression.Column):
@@ -656,18 +705,18 @@ class GroupbyNode(Node):
             gb_exp_list.append(new_exp)
         
         ret_exp_list.append(gb_exp_list)
-        return ret_exp_list
+        return ret_exp_list'''
 
-    def __getOriginalExp__(self, exp):
+    def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
 	    return exp
 	index = exp.column_name
         tmp_exp = self.child.select_list.exp_list[index]
-        new_exp = copy.deepcopy(self.child.__getOriginalExp__(tmp_exp))
+        new_exp = copy.deepcopy(self.child.__getOriginalExp__(tmp_exp, False))
         return new_exp
 
     def __print__(self):
-	print "GroupbyNode:"
+	print "GroupbyNode:----------"
 	super(GroupbyNode, self).__print__()
 	if self.groupby_clause is not None:
 	    self.groupby_clause.__print__()
@@ -680,7 +729,8 @@ class OrderbyNode(Node):
     composite = None
     output = None
 
-    def __init__(self):
+    def __init__(self, name="orderby"):
+	self.name = name
 	super(OrderbyNode, self).__init__()
 	
     def genOrderby(self):
@@ -742,12 +792,16 @@ class OrderbyNode(Node):
 	self.child.genColumnIndex()
 
     def toOp(self):
+	global op_id
+	op_id = op_id + 1
 	ret_op = op.SpjOp()
+	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	ret_op.pk_list = self.getPartitionKey()
+	#ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
-	print "OrderbyNode, PK_LIST:", ret_op.pk_list
+	print "OrderbyNode, PK_LIST:"
+	util.printExpList(ret_op.pk_list)
 	return ret_op
 
     def getPartitionKey(self):
@@ -759,7 +813,7 @@ class OrderbyNode(Node):
 	return None
 
     def __print__(self):
-	print "OrderbyNode:"
+	print "OrderbyNode:----------"
 	super(OrderbyNode, self).__print__()
 	if self.orderby_clause is not None:
 	    self.orderby_clause.__print__()
@@ -776,7 +830,8 @@ class JoinNode(Node):
     right_child = None
     parent = None
 
-    def __init__(self):
+    def __init__(self, name="join"):
+	self.name = name
 	super(JoinNode, self).__init__()
 
     def adjustIndex(self, exp_list, table_name):
@@ -844,23 +899,26 @@ class JoinNode(Node):
 	self.right_child.genTableName()
 	
     def predicatePushdown(self):
+	print "JoinNode, predicate"
 	if self.where_condition is not None:
 	    exp = self.where_condition.where_condition_exp
 	    left_exp = exp.booleanFilter(self.left_child, True)
 	    right_exp = exp.booleanFilter(self.right_child, True)
 	    # DEBUG
-	    #print exp.evaluate(), left_exp, right_exp, "PREDICATE_PUSHDOWN"
+	    print exp.evaluate(), left_exp, right_exp, "PREDICATE_PUSHDOWN"
 	    if left_exp is not None:
 		if self.left_child.where_condition is None:
-		    self.left_child.where_condition = WhereConditionParser(None)
+		    self.left_child.where_condition = ast.WhereConditionParser(None)
 		self.left_child.where_condition.where_condition_exp = copy.deepcopy(left_exp)
 	    if right_exp is not None:
 		if self.right_child.where_condition is None:
-		    self.right_child.where_condition = WhereConditionParser(None)
+		    self.right_child.where_condition = ast.WhereConditionParser(None)
 		self.right_child.where_condition.where_condition_exp = copy.deepcopy(right_exp)
 	    if self.is_explicit is False:
 		join_exp = exp.genJoinKey()
 		if join_exp is not None:
+		    print "join_exp not none:", join_exp.evaluate()
+		    print "exp:", exp.evaluate()
 		    if self.join_condition is None:
 			self.join_condition = WhereConditionParser(None)
 		    self.join_condition.where_condition_exp = copy.deepcopy(join_exp)
@@ -883,17 +941,20 @@ class JoinNode(Node):
 	exp_list = []
 	if self.select_list is not None:
 	    for exp in self.select_list.exp_list:
+		print "child columnfilter:", exp.evaluate()
 		exp.selectListFilter(self.select_list, child, select_dic, exp_list)
+	util.printExpList(exp_list)
 	if self.where_condition is not None:
-	    self.where_condition.where_condition_exp.addToSelectList(self, select_dic, exp_list)
+	    self.where_condition.where_condition_exp.addToSelectList(child, select_dic, exp_list)
 	if self.is_explicit is True:
 	    self.join_condition.on_condition_exp.addToSelectList(child, select_dic, exp_list)
 	elif self.join_condition is not None:
 	    self.join_condition.where_condition_exp.addToSelectList(child, select_dic, exp_list)
-	
+	print "add to select list:"
+	util.printExpList(exp_list)
 	if child.select_list is None:
 	    child.select_list = ast.SelectListParser(None)
-	if isinstance(child, SPNode):
+	'''if isinstance(child, SPNode):
 	    new_list = []
 	    new_dic = {}
 	    table = util.searchTable(child.table_alias)
@@ -913,26 +974,34 @@ class JoinNode(Node):
 	    child.select_list.exp_list = new_list
 	else:
 	    child.select_list.exp_alias_dic = select_dic
-	    child.select_list.exp_list = exp_list
+	    child.select_list.exp_list = exp_list'''
+	child.select_list.exp_alias_dic = select_dic
+	child.select_list.exp_list = exp_list
 	
     def processSelectList(self):
 	super(JoinNode, self).processSelectStar()
 	self.left_child.processSelectStar()
 	self.right_child.processSelectStar()
 	
-    def __genJoinKey__(self):
+    def updateSPList(self):
+	if self.is_explicit:
+	    join_exp = self.join_condition.on_condition_exp
+	else:
+	    join_exp = self.join_condition.where_condition_exp
+	where_exp = self.where_condition.where_condition_exp
+
+    '''def __genJoinKey__(self):
 	print "genJoinKey..."
 	if self.is_explicit is False:
 	    # DEBUG
 	    print "genJoinKey"
 	    join_exp = self.join_condition.where_condition_exp.genJoinKey()
 	    if join_exp is not None:
-		self.join_condition.where_condition_exp = copy.deepcopy(join_exp)
+		self.join_condition.where_condition_exp = copy.deepcopy(join_exp)'''
 
     def genColumnIndex(self):
-	self.__genJoinKey__()
-	self.__genSelectIndex__()
-	self.__genWhereIndex__()
+	#self.__genSelectIndex__()
+	#self.__genWhereIndex__()
 	#self.__genJoinIndex__()
 	self.table_list = []
 	self.__genChildColumnIndex__(self.left_child, False)
@@ -996,7 +1065,7 @@ class JoinNode(Node):
 			#print "after:", [col.table_name, col.column_name]
 		
 		# generate the index of select list
-	    for exp in self.parent.select_list.exp_list:
+	    for exp in self.select_list.exp_list:
 		if isinstance(exp, expression.Function):
 		    col_list = []
 		    exp.getPara(col_list)
@@ -1025,15 +1094,39 @@ class JoinNode(Node):
 		    break
 
     def toOp(self):
+	global op_id
+	op_id = op_id + 1
 	ret_op = op.SpjOp()
+	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	ret_op.pk_list = self.getPartitionKey()
+	#ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
-	print "JoinNode, PK_LIST:", ret_op.pk_list
+	print "JoinNode, PK_LIST:"
+	util.printExpList(ret_op.pk_list)
 	return ret_op
 
     def getPartitionKey(self):
+	if self.join_condition is None:
+	    return None
+	
+	ret_exp_list = []
+	tmp_list = []
+	
+	if self.is_explicit:
+	    self.join_condition.on_condition_exp.getPara(tmp_list)
+	else:
+	    self.join_condition.where_condition_exp.getPara(tmp_list)
+	# print tmp_list
+	print "tmp_list:", tmp_list[0].table_name, tmp_list[1].table_name
+	for i in range(0, len(tmp_list)):
+	    new_exp = self.__getOriginalExp__(tmp_list[i], True)
+	    if new_exp is not None and new_exp not in ret_exp_list:
+		ret_exp_list.append(new_exp)
+	
+	return ret_exp_list
+
+    '''def getPartitionKey(self):
 	if self.join_condition is None:
 	    return None
 	
@@ -1049,47 +1142,49 @@ class JoinNode(Node):
 	# print tmp_list
 	print "tmp_list:", tmp_list[0].table_name, tmp_list[1].table_name
 	for i in range(0, len(tmp_list)):
-	    new_exp = self.__getOriginalExp__(tmp_list[i])
+	    new_exp = self.__getOriginalExp__(tmp_list[i], True)
 	    if new_exp is None:
 		continue
 	    if tmp_list[i].table_name == "LEFT":
 		left_list.append(new_exp)
-	        print "PartitionKey:", new_exp.table_name, new_exp.column_name
+	        print "PartitionKey:", new_exp.evaluate()
 	    else:
 		right_list.append(new_exp)
-	        print "PartitionKey:", new_exp.table_name, new_exp.column_name
+	        print "PartitionKey:", new_exp.evaluate()
 	
 	ret_exp_list.append(left_list)
 	ret_exp_list.append(right_list)
-	return ret_exp_list
+	return ret_exp_list'''
 
-    def __getOriginalExp__(self, exp):
+    def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
 	    return exp
 	index = exp.column_name
         table_name = exp.table_name
 	print "__genOriginalExp__:", table_name, index
         if table_name == "LEFT":
-	    if self.left_child.select_list is None:
-		new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(exp))
+	    if flag and isinstance(self.left_child, SPNode) and isinstance(self.left_child.child, TableNode):
+		tmp_exp = copy.deepcopy(exp)
+		tmp_exp.table_name = self.left_child.select_list.exp_list[0].table_name
+		new_exp = copy.deepcopy(self.left_child.child.__getOriginalExp__(tmp_exp, False))
 	    else:            
 		index = exp.column_name
 		tmp_exp = self.left_child.select_list.exp_list[index]
-		new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp))
+		new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp, False))
         else:
-	    if self.right_child.select_list is None:
-		new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(exp))
+	    if flag and isinstance(self.right_child, SPNode) and isinstance(self.right_child.child, TableNode):
+		tmp_exp = copy.deepcopy(exp)
+		tmp_exp.table_name = self.right_child.select_list.exp_list[0].table_name
+		new_exp = copy.deepcopy(self.right_child.child.__getOriginalExp__(tmp_exp, False))
             else:
 		index = exp.column_name
-		# print index
-		# print self.right_child.select_list.exp_list
 		tmp_exp = self.right_child.select_list.exp_list[index]
-		new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp))
+		new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
 
         return new_exp
 
     def __print__(self):
-	print "JoinNode:"
+	print "JoinNode:----------"
 	super(JoinNode, self).__print__()
 	print "is_explicit: ", self.is_explicit, "join_type: ", self.join_type
 	if self.join_condition is not None:
@@ -1107,7 +1202,8 @@ class JoinNodeList(Node):
     children_list = None
     parent = None
 
-    def __init__(self):
+    def __init__(self, name="joinlist"):
+	self.name = name
 	super(JoinNodeList, self).__init__()
 		
     def genGroupby(self):
@@ -1171,7 +1267,6 @@ class JoinNodeList(Node):
 		    join_node.join_type = tmp_list_join_type[tmp_index]
 		
 	        current_node = join_node
-		print "current", current_node.table_list
 	    tmp_index += 1
 
         current_node.select_list = copy.deepcopy(self.select_list)
@@ -1183,7 +1278,7 @@ class JoinNodeList(Node):
         return current_node
 
     def __print__(self):
-	print "JoinNodeList:"
+	print "JoinNodeList:----------"
 	super(JoinNodeList, self).__print__()
 	for node in self.children_list:
 	    node.__print__()
@@ -1203,40 +1298,38 @@ class RootSelectNode(Node):
 	    node.source = input
 	    node.is_handler = is_handler
 	    # CHANGED
-	    '''if node.is_handler:
+	    if node.is_handler:
 	        node.select_list = self.select_list
                 node.where_condition = self.where_condition
                 node.groupby_clause = self.groupby_clause
                 node.having_clause = self.having_clause
-                node.orderby_clause = self.orderby_clause'''
+                node.orderby_clause = self.orderby_clause
 
-	    node.select_list = self.select_list
+	    '''node.select_list = self.select_list
             node.where_condition = self.where_condition
             node.groupby_clause = self.groupby_clause
             node.having_clause = self.having_clause
-            node.orderby_clause = self.orderby_clause
+            node.orderby_clause = self.orderby_clause'''
 	    node.child = TableNode()
+	    node.child.select_list = ast.SelectListParser(None)
 	    node.child.table_name = input["content"]
 	    node.child.table_alias = input["alias"]
 	    if node.child.table_alias == "":
 		if node.child.table_name not in node.child.table_list:
 		    node.child.table_list.append(node.child.table_name)
-		    print "table_list", node.child.table_list, node.child.table_name
 	    else:
 		if node.child.table_alias not in node.child.table_list:
 		    node.child.table_list.append(node.child.table_alias)
-		    print "table_list", node.child.table_list, node.child.table_name
 		node.child.table_alias_dic[node.child.table_alias] = node.child.table_name
-	
+	    print "table_list", node.child.table_list
 	    node.table_list = node.child.table_list
 	    node.table_alias_dic = node.child.table_alias_dic
 	elif input["type"] == "SubQuery":
-	    node = input["content"].toInitialQueryPlanTree()
+	    '''node = input["content"].toInitialQueryPlanTree()
 	    node.table_alias = input["alias"]
-	    
 	    if node.table_alias is not None and node.table_alias not in node.table_list:
-		node.table_list.append(node.table_alias)
-	    """node = SPNode()
+		node.table_list = [node.table_alias]'''
+	    node = SPNode()
 	    node.source = input
 	    node.is_handler = is_handler
 	    if is_handler:	
@@ -1249,7 +1342,7 @@ class RootSelectNode(Node):
 	    node.table_alias = input["alias"]
 	    if node.table_alias is not None and node.table_alias not in node.table_list:
 		node.table_list.append(node.table_alias)
-	"""
+	
 	elif input["type"] == "JoinClause":
 	    node = SPNode()
 	    node.source = input
@@ -1275,7 +1368,7 @@ class RootSelectNode(Node):
 		child = self.toInitialPlanTree(item, False)
 		tmp_children_list.append(child)
 	    node.child.children_list = list(tmp_children_list)
-	    node.select_list = self.select_list
+	    #node.select_list = self.select_list
 	    node.where_condition = self.where_condition
             '''node.child.groupby_clause = self.groupby_clause
             node.child.having_clause = self.having_clause
@@ -1297,7 +1390,7 @@ class RootSelectNode(Node):
 	    node = self.toInitialPlanTree(tmp_from_list[0], True)
 	
 	else:
-	    node = SPNode()
+	    '''node = SPNode()
 	    node.select_list = self.select_list
 	    node.where_condition = self.where_condition
 	    node.groupby_clause = self.groupby_clause
@@ -1306,8 +1399,9 @@ class RootSelectNode(Node):
 	    
 	    node.child = JoinNodeList()
 	    node.child.parent = node
-	    #node.child.select_list = self.select_list
-	    node.child.where_condition = self.where_condition
+	    #node.child.select_list = node.select_list
+	    node.child.select_list = ast.SelectListParser(None)
+	    node.child.where_condition = node.where_condition
 	    tmp_list = []
 	    for item in tmp_from_list:
 		converted_item = self.toInitialPlanTree(item, False)
@@ -1324,9 +1418,33 @@ class RootSelectNode(Node):
 	    node.child.is_explicit = False
 	    node.child.join_info = []
 	    node.child.join_info.append(self.where_condition)
-
+	    print "joinnodelist", node.child.table_list
 	    node.table_list = node.child.table_list
-	    node.table_alias_dic = node.child.table_alias_dic
+	    node.table_alias_dic = node.child.table_alias_dic'''
+	    
+	    node = JoinNodeList()
+	    node.select_list = self.select_list
+	    node.where_condition = self.where_condition
+	    node.groupby_clause = self.groupby_clause
+	    node.having_clause = self.having_clause
+	    node.orderby_clause = self.orderby_clause
+	    
+	    tmp_list = []
+	    for item in tmp_from_list:
+		converted_item = self.toInitialPlanTree(item, False)
+		tmp_list.append(converted_item)
+		for key in converted_item.table_alias_dic.keys():
+		    if key not in node.table_alias_dic.keys():
+			node.table_alias_dic[key] = converted_item.table_alias[key]
+		
+		for table in converted_item.table_list:
+		    if table not in node.table_list:
+			node.table_list.append(table)
+	    node.children_list = list(tmp_list)
+	
+	    node.is_explicit = False
+	    node.join_info = []
+	    node.join_info.append(self.where_condition)
 	return node
 
     def convertFromList(self, input_list):

@@ -1,0 +1,242 @@
+groupby_clause: [<expression.Column instance at 0x1906f80>]
+table_list [u'LINEITEM'] LINEITEM
+table_list [u'PART'] PART
+table_list [u'LINEITEM'] LINEITEM
+groupby, predicate
+<ast.SelectListParser instance at 0x1906200>
+spnode, predicate
+JoinNode, predicate
+self AND
+para_list EQ
+self EQ
+TOUTER.L_PARTKEY
+[u'LINEITEM', u'PART', u'TOUTER']
+tmp_flag is true
+TINNER.LP
+[u'LINEITEM', u'PART', u'TOUTER']
+exp_flag is  False remove_flag is  True
+tmp_exp None
+para_list LT
+self LT
+TOUTER.L_QUANTITY
+[u'LINEITEM', u'PART', u'TOUTER']
+tmp_flag is true
+TINNER.LQ
+[u'LINEITEM', u'PART', u'TOUTER']
+exp_flag is  False remove_flag is  True
+tmp_exp None
+self AND
+para_list EQ
+self EQ
+TOUTER.L_PARTKEY
+[u'LINEITEM', u'TINNER']
+TINNER.LP
+[u'LINEITEM', u'TINNER']
+tmp_flag is true
+exp_flag is  False remove_flag is  True
+tmp_exp None
+para_list LT
+self LT
+TOUTER.L_QUANTITY
+[u'LINEITEM', u'TINNER']
+TINNER.LQ
+[u'LINEITEM', u'TINNER']
+tmp_flag is true
+exp_flag is  False remove_flag is  True
+tmp_exp None
+AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ)) None None PREDICATE_PUSHDOWN
+REMOVE PARA
+EQ(TOUTER.L_PARTKEY,TINNER.LP)
+AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ))
+AND(TOUTER.L_PARTKEY,TINNER.LP)
+join_exp:  <expression.Function instance at 0x1917fc8>
+not none: EQ(TOUTER.L_PARTKEY,TINNER.LP)
+spnode, predicate
+JoinNode, predicate
+self AND
+para_list EQ
+self EQ
+PART.P_PARTKEY
+[u'LINEITEM']
+LINEITEM.L_PARTKEY
+[u'LINEITEM']
+tmp_flag is true
+exp_flag is  False remove_flag is  True
+tmp_exp None
+para_list EQ
+self EQ
+PART.P_BRAND
+[u'LINEITEM']
+"BRAND#34"
+exp_flag is  False remove_flag is  True
+tmp_exp None
+para_list EQ
+self EQ
+PART.P_CONTAINER
+[u'LINEITEM']
+"MED PACK"
+exp_flag is  False remove_flag is  True
+tmp_exp None
+self AND
+para_list EQ
+self EQ
+PART.P_PARTKEY
+[u'PART']
+tmp_flag is true
+LINEITEM.L_PARTKEY
+[u'PART']
+exp_flag is  False remove_flag is  True
+tmp_exp None
+para_list EQ
+self EQ
+PART.P_BRAND
+[u'PART']
+tmp_flag is true
+"BRAND#34"
+exp_flag is  True remove_flag is  True
+REMOVE PARA
+EQ(PART.P_BRAND,"BRAND#34")
+AND(EQ(PART.P_PARTKEY,LINEITEM.L_PARTKEY),EQ(PART.P_BRAND,"BRAND#34"),EQ(PART.P_CONTAINER,"MED PACK"))
+AND(PART.P_BRAND,"BRAND#34")
+tmp_exp <expression.Function instance at 0x1919248>
+para_list EQ
+self EQ
+PART.P_CONTAINER
+[u'PART']
+tmp_flag is true
+"MED PACK"
+exp_flag is  True remove_flag is  True
+REMOVE PARA
+EQ(PART.P_CONTAINER,"MED PACK")
+AND(PART.P_BRAND,"BRAND#34")
+AND(PART.P_CONTAINER,"MED PACK")
+tmp_exp <expression.Function instance at 0x1919050>
+REMOVE PARA
+EQ(PART.P_BRAND,"BRAND#34")
+AND(EQ(PART.P_PARTKEY,LINEITEM.L_PARTKEY),EQ(PART.P_BRAND,"BRAND#34"),EQ(PART.P_CONTAINER,"MED PACK"))
+AND(PART.P_BRAND,"BRAND#34")
+REMOVE PARA
+EQ(PART.P_CONTAINER,"MED PACK")
+AND(PART.P_BRAND,"BRAND#34")
+AND(PART.P_CONTAINER,"MED PACK")
+AND(PART.P_CONTAINER,"MED PACK") None <expression.Function instance at 0x1913ea8> PREDICATE_PUSHDOWN
+join_exp:  None
+spnode, predicate
+spnode, predicate
+groupby, predicate
+<ast.SelectListParser instance at 0x1915128>
+spnode, predicate
+GroupbyNode:
+select_list:
+exp_list: 
+DIVIDE(SUM(LINEITEM.L_EXTENDEDPRICE),7.0)
+exp_alias_dic: 
+DIVIDE(SUM(LINEITEM.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
+table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'TINNER'] table_alias_dic:  {}
+groupby_list: 
+1
+SPNode:
+select_list:
+exp_list: 
+DIVIDE(SUM(LINEITEM.L_EXTENDEDPRICE),7.0)
+exp_alias_dic: 
+DIVIDE(SUM(LINEITEM.L_EXTENDEDPRICE),7.0) : AVG_YEARLY
+where_condition:  AND(EQ(TOUTER.L_PARTKEY,TINNER.LP),LT(TOUTER.L_QUANTITY,TINNER.LQ))
+table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'TINNER'] table_alias_dic:  {}
+JoinNode:
+select_list:
+exp_list: 
+exp_alias_dic: 
+where_condition:  AND(TOUTER.L_PARTKEY,TINNER.LP)
+table_list:  [u'LINEITEM', u'PART', u'TOUTER', u'TINNER'] table_alias_dic:  {}
+is_explicit:  False join_type:  None
+where_condition:  EQ(TOUTER.L_PARTKEY,TINNER.LP)
+left_child:
+SPNode:
+select_list:
+exp_list: 
+LINEITEM.L_PARTKEY
+LINEITEM.L_QUANTITY
+LINEITEM.L_EXTENDEDPRICE
+exp_alias_dic: 
+LINEITEM.L_EXTENDEDPRICE : L_EXTENDEDPRICE
+LINEITEM.L_PARTKEY : L_PARTKEY
+LINEITEM.L_QUANTITY : L_QUANTITY
+where_condition:  AND(EQ(PART.P_PARTKEY,LINEITEM.L_PARTKEY),EQ(PART.P_BRAND,"BRAND#34"),EQ(PART.P_CONTAINER,"MED PACK"))
+table_list:  [u'LINEITEM', u'PART', u'TOUTER'] table_alias_dic:  {}
+JoinNode:
+select_list:
+exp_list: 
+exp_alias_dic: 
+where_condition:  AND(PART.P_CONTAINER,"MED PACK")
+table_list:  [u'LINEITEM', u'PART'] table_alias_dic:  {}
+is_explicit:  False join_type:  None
+where_condition:  AND(EQ(PART.P_PARTKEY,LINEITEM.L_PARTKEY),EQ(PART.P_BRAND,"BRAND#34"),EQ(PART.P_CONTAINER,"MED PACK"))
+left_child:
+SPNode:
+select_list:
+exp_list: 
+LINEITEM.L_PARTKEY
+LINEITEM.L_QUANTITY
+LINEITEM.L_EXTENDEDPRICE
+exp_alias_dic: 
+LINEITEM.L_EXTENDEDPRICE : L_EXTENDEDPRICE
+LINEITEM.L_PARTKEY : L_PARTKEY
+LINEITEM.L_QUANTITY : L_QUANTITY
+where_condition:  AND(EQ(UNKNOWN.P_PARTKEY,LINEITEM.L_PARTKEY),EQ(UNKNOWN.P_BRAND,"BRAND#34"),EQ(UNKNOWN.P_CONTAINER,"MED PACK"))
+table_list:  [u'LINEITEM'] table_alias_dic:  {}
+TableNode:
+select_list:
+exp_list: 
+exp_alias_dic: 
+table_list:  [u'LINEITEM'] table_alias_dic:  {}
+table_name:  LINEITEM table_alias:  
+right_child:
+SPNode:
+select_list:
+exp_list: 
+UNKNOWN.L_PARTKEY
+UNKNOWN.L_QUANTITY
+UNKNOWN.L_EXTENDEDPRICE
+exp_alias_dic: 
+UNKNOWN.L_EXTENDEDPRICE : L_EXTENDEDPRICE
+UNKNOWN.L_PARTKEY : L_PARTKEY
+UNKNOWN.L_QUANTITY : L_QUANTITY
+where_condition:  AND(EQ(PART.P_BRAND,"BRAND#34"),EQ(PART.P_CONTAINER,"MED PACK"))
+table_list:  [u'PART'] table_alias_dic:  {}
+TableNode:
+select_list:
+exp_list: 
+exp_alias_dic: 
+table_list:  [u'PART'] table_alias_dic:  {}
+table_name:  PART table_alias:  
+right_child:
+GroupbyNode:
+select_list:
+exp_list: 
+LINEITEM.L_PARTKEY
+MULTIPLY(0.2,AVG(LINEITEM.L_QUANTITY))
+exp_alias_dic: 
+LINEITEM.L_PARTKEY : LP
+MULTIPLY(0.2,AVG(LINEITEM.L_QUANTITY)) : LQ
+table_list:  [u'LINEITEM', u'TINNER'] table_alias_dic:  {}
+groupby_list: 
+LINEITEM.L_PARTKEY
+SPNode:
+select_list:
+exp_list: 
+LINEITEM.L_PARTKEY
+MULTIPLY(0.2,AVG(LINEITEM.L_QUANTITY))
+exp_alias_dic: 
+MULTIPLY(0.2,AVG(LINEITEM.L_QUANTITY)) : LQ
+LINEITEM.L_PARTKEY : LP
+table_list:  [u'LINEITEM', u'TINNER'] table_alias_dic:  {}
+TableNode:
+select_list:
+exp_list: 
+exp_alias_dic: 
+table_list:  [u'LINEITEM', u'TINNER'] table_alias_dic:  {}
+table_name:  LINEITEM table_alias:  
+GroupbyNode, PK_LIST: [[<expression.Constant instance at 0x1908f80>], [<expression.Constant instance at 0x1908f80>]]
+tmp_list: TOUTER TINNER
+__genOriginalExp__: TOUTER L_PARTKEY
