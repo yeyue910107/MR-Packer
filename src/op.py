@@ -29,8 +29,10 @@ class Op(object):
     ic_list = None	# input correlation nodes list
     oc_list = None	# output correlation nodes list
     pk_list = None
+    pk_dic = None
     map_output = {}
     map_filter = {}
+    reduce_output = {}
     reduce_filter = {}
     is_composite = False
 
@@ -40,6 +42,7 @@ class Op(object):
 	self.reduce_phase = []
 	self.child_list = []
 	self.parent = None
+	self.pk_dic = {}
 
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):
@@ -100,7 +103,8 @@ class Op(object):
 	return all_cost
 
     def getLowCostMRQ(self):
-	if len(self.child_list) == 0 and self.isBottom():
+	if len(self.child_list) == 0:
+	#if len(self.child_list) == 0 and self.isBottom():
 	    print "FINDROOT_BEGIN"
 	    root_mrq = self.findRoot()
 	    root_mrq.__printAll__()

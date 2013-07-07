@@ -452,7 +452,7 @@ class SPNode(Node):
 	ret_op.id = [op_id]
 	ret_op.is_sp = True
 	ret_op.map_phase.append(self)
-	#ret_op.pk_list = self.getPartitionKey()
+	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "SPNode, PK_LIST:"
 	util.printExpList(ret_op.pk_list)
@@ -676,7 +676,7 @@ class GroupbyNode(Node):
 	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	#ret_op.pk_list = self.getPartitionKey()
+	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "GroupbyNode, PK_LIST:"
 	util.printExpList(ret_op.pk_list)
@@ -798,7 +798,7 @@ class OrderbyNode(Node):
 	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	#ret_op.pk_list = self.getPartitionKey()
+	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "OrderbyNode, PK_LIST:"
 	util.printExpList(ret_op.pk_list)
@@ -1100,7 +1100,7 @@ class JoinNode(Node):
 	ret_op.id = [op_id]
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
-	#ret_op.pk_list = self.getPartitionKey()
+	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "JoinNode, PK_LIST:"
 	util.printExpList(ret_op.pk_list)

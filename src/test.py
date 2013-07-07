@@ -19,11 +19,13 @@ import node
 import schema
 import util
 import op
+import codegen
 
 if __name__ == "__main__":
     _file = open("../test/17.xml", "r")
     schema = "../test/tpch.schema"
     pt = ast.astToQueryPlan(schema, _file)
     mrq = node.planTreeToMRQ(pt)
-    mrq.getLowCostMRQ()
+    #mrq.getLowCostMRQ()
+    codegen.genCode(mrq, "codetest")
     _file.close()
