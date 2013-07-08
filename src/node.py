@@ -445,6 +445,18 @@ class SPNode(Node):
 	self.__genWhereIndex__()
 	self.child.genColumnIndex()
 
+    def getMapOutput(self, table_name):
+	if isinstance(self.child, TableNode):
+	    return copy.deepcopy(self.select_list.exp_list)
+	else:
+	    return self.child.getMapOutput(table_name)
+
+    def getMapFilter(self, table_name):
+	if isinstance(self.child, TableNode):
+	    return self.where_condition
+	else:
+	    return self.child.getMapFilter(table_name)
+
     def toOp(self):
 	global op_id
 	op_id = op_id + 1
@@ -669,6 +681,16 @@ class GroupbyNode(Node):
 		col.column_name = exp_list.index(exp)
 		break
 
+    def getMapOutput(self, table_name):
+	if self.child is not None and self.child.select_list is not None:
+	    return copy.deepcopy(self.child.select_list.exp_list)
+	return None
+
+    def getMapFilter(self, table_name):
+	if self.child is not None:
+	    return self.child.where_condition
+	return None
+
     def toOp(self):
 	global op_id
 	op_id = op_id + 1
@@ -790,6 +812,16 @@ class OrderbyNode(Node):
 	
     def genColumnIndex(self):
 	self.child.genColumnIndex()
+
+    def getMapOutput(self, table_name):
+	if self.child is not None and self.child.select_list is not None:
+	    return copy.deepcopy(self.child.select_list.exp_list)
+	return None
+
+    def getMapFilter(self, table_name):
+	if self.child is not None:
+	    return self.child.where_condition
+	return None
 
     def toOp(self):
 	global op_id
@@ -1092,6 +1124,19 @@ class JoinNode(Node):
 		if table_name not in table_list:
 		    table_list.append(table_name)
 		    break
+
+    def getMapOutput(self, table_name):
+	if table_name == "LEFT" or table_name in self.left_child.table_list or table_name in self.left_child.table_alias_dict.values():
+            return copy.deepcopy(self.left_child.select_list.exp_list)
+
+        else:
+            return copy.deepcopy(self.right_child.select_list.exp_list)
+
+    def getMapFilter(self, table_name):
+        if table_name in self.left_child.table_list:
+            return self.left_child.where_condition
+        else:
+            return self.right_child.where_condition
 
     def toOp(self):
 	global op_id

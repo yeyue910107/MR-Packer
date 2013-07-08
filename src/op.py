@@ -44,6 +44,41 @@ class Op(object):
 	self.parent = None
 	self.pk_dic = {}
 
+    def postProcess(self):
+	node_list = []
+	for node in map_phase:
+	    if node not in node_list:
+		node_list.append(node)
+	for node in reduce_phase:
+	    if node not in node_list:
+		node_list.append(node)
+
+	table_list = []
+	for node in node_list:
+	    if isinstance(node, node.JoinNode):
+		if isinstance(node.left_child, node.SPNode) and isinstance(node.left_child.child, node.TableNode):
+		    tmp_name = ""
+		    if node.left_child.child.table_alias != "":
+			tmp_name = node.left_child.child.table_alias
+		    else:
+			tmp_name = node.left_child.table_name
+		    table_list.append(tmp_name)
+		if isinstance(node.right_child, node.SPNode) and isinstance(node.right_child.child, node.TableNode):
+		    tmp_name = ""
+		    if node.right_child.child.table_alias != "":
+			tmp_name = node.right_child.child.table_alias
+		    else:
+			tmp_name = node.right_child.table_name
+		    table_list.append(tmp_name)
+	    if isinstance(node, node.GroupbyNode) or isinstance(node, node.OrderbyNode):
+		if isinstance(node.child, node.SPNode) and isinstance(node.child.child, node.TableNode):
+		    tmp_name = ""
+		    if node.child.child.table_alias != "":
+			tmp_name = node.child.child.table_alias
+		    else:
+			tmp_name = node.child.child.table_name
+		    table_list.append(tmp_name)
+
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):
 	#print op1, op1.id, op2, op2.id, rule_type
