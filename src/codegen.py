@@ -16,6 +16,7 @@
 """
 import expression
 import copy
+import node
 
 math_func_dic = { "PLUS":" + ", "MINUS":" - ", "DIVIDE":" / ", "MULTIPLY":" * " }
 agg_func_list = [ "SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT" ]
@@ -403,6 +404,7 @@ def isSelfJoin(node):
     return false
 
 def genOpCode(op, fo):
+    op.postProcess()
     line_buf = "line_buf"
     map_key_type = ""
 
@@ -414,14 +416,14 @@ def genOpCode(op, fo):
     print filename
     [file_name, file_index] = filename.split("_")
    
-    for child in op.child_list:
+    '''for child in op.child_list:
         index = int(file_index) + op.child_list.index(child) + 1
         tb_name = file_name + "_" + str(index)
         index_name[index] = tb_name
-        op.pk_dic[tb_name] = copy.deepcopy(op.pk_dic[index])
-        del op.pk_dic[index]
-        for exp in op.pk_dic[tb_name][0]:
-            exp.table_name = tb_name
+        #op.pk_dic[tb_name] = copy.deepcopy(op.pk_dic[index])
+        #del op.pk_dic[index]
+        #for exp in op.pk_dic[tb_name][0]:
+        #    exp.table_name = tb_name
         exp_list = child.oc_list[-1].select_list.exp_list
         tmp_exp_list = []
         for exp in exp_list:
@@ -432,8 +434,9 @@ def genOpCode(op, fo):
             new_exp.column_type = exp.column_type
             tmp_exp_list.append(new_exp)
 
-        op.map_output[tb_name] = tmp_exp_list
+        op.map_output[tb_name] = tmp_exp_list'''
 
+    print "map_output", op.map_output
     # get map key value type
     buf_dic = {}
     i = 1

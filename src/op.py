@@ -18,6 +18,7 @@ import strategy
 import op
 import node
 import util
+import expression
 
 class Op(object):
     id = None
@@ -47,48 +48,54 @@ class Op(object):
 
     def postProcess(self):
 	node_list = []
-	for node in map_phase:
-	    if node not in node_list:
-		node_list.append(node)
-	for node in reduce_phase:
-	    if node not in node_list:
-		node_list.append(node)
+	for tmp_node in self.map_phase:
+	    if tmp_node not in node_list:
+		node_list.append(tmp_node)
+	for tmp_node in self.reduce_phase:
+	    if tmp_node not in node_list:
+		node_list.append(tmp_node)
+	print "node_list", node_list
+	for pk in self.pk_list:
+	    if isinstance(pk, expression.Column) and pk.table_name not in pk_dic.keys():
+		pk_dic[pk.table_name] = pk
 
 	table_list = []
-	for node in node_list:
-	    if isinstance(node, node.JoinNode):
-		if isinstance(node.left_child, node.SPNode) and isinstance(node.left_child.child, node.TableNode):
+	for tmp_node in node_list:
+	    if isinstance(tmp_node, node.JoinNode):
+		if isinstance(tmp_node.left_child, node.SPNode) and isinstance(tmp_node.left_child.child, node.TableNode):
 		    tmp_name = ""
-		    if node.left_child.child.table_alias != "":
-			tmp_name = node.left_child.child.table_alias
+		    if tmp_node.left_child.child.table_alias != "":
+			tmp_name = tmp_node.left_child.child.table_alias
 		    else:
-			tmp_name = node.left_child.table_name
+			tmp_name = tmp_node.left_child.table_name
 		    table_list.append(tmp_name)
-		if isinstance(node.right_child, node.SPNode) and isinstance(node.right_child.child, node.TableNode):
+		if isinstance(tmp_node.right_child, node.SPNode) and isinstance(tmp_node.right_child.child, node.TableNode):
 		    tmp_name = ""
-		    if node.right_child.child.table_alias != "":
-			tmp_name = node.right_child.child.table_alias
+		    if tmp_node.right_child.child.table_alias != "":
+			tmp_name = tmp_node.right_child.child.table_alias
 		    else:
-			tmp_name = node.right_child.table_name
+			tmp_name = tmp_node.right_child.table_name
 		    table_list.append(tmp_name)
-	    if isinstance(node, node.GroupbyNode) or isinstance(node, node.OrderbyNode):
-		if isinstance(node.child, node.SPNode) and isinstance(node.child.child, node.TableNode):
+	    if isinstance(tmp_node, node.GroupbyNode) or isinstance(tmp_node, node.OrderbyNode):
+		if isinstance(tmp_node.child, node.SPNode) and isinstance(tmp_node.child.child, node.TableNode):
 		    tmp_name = ""
-		    if node.child.child.table_alias != "":
-			tmp_name = node.child.child.table_alias
+		    if tmp_node.child.child.table_alias != "":
+			tmp_name = tmp_node.child.child.table_alias
 		    else:
-			tmp_name = node.child.child.table_name
+			tmp_name = tmp_node.child.child.table_name
 		    table_list.append(tmp_name)
+	    
 
+	    print "table_list", table_list
 	    # set map output
 	    for table in table_list:
                 tn = table
                 tn_alias = table
 
-                if table in node.table_alias_dic.keys():
-                    tn = node.table_alias_dic[table]
+                if table in tmp_node.table_alias_dic.keys():
+                    tn = tmp_node.table_alias_dic[table]
 
-                tmp_exp_list = node.getMapOutput(tn_alias)
+                tmp_exp_list = tmp_node.getMapOutput(tn_alias)
 
                 for exp in tmp_exp_list:
                     new_exp = expression.Column(tn, exp.column_name)
@@ -103,13 +110,13 @@ class Op(object):
                         op.map_output[tn] = tmp
 
 		# set map filter
-                tmp_where = node.getMapFilter(tn_alias)
+                tmp_where = tmp_node.getMapFilter(tn_alias)
                 if tmp_where is not None:
                     col_list = []
                     tmp_where.where_condition.getPara(col_list)
                     for col in col_list:
-                        if col.table_name in node.table_alias_dic.keys():
-                            col.table_name = node.table_alias_dic[col.table_name]
+                        if col.table_name in tmp_node.table_alias_dic.keys():
+                            col.table_name = tmp_node.table_alias_dic[col.table_name]
 
                     if tn in op.map_filter.keys():
                         op.map_filter[tn].append(tmp_where.where_condition_exp)
@@ -139,6 +146,10 @@ class Op(object):
 	new_op.child_list.remove(op1)
 	new_op.id.extend(op2.id)
 	new_op.id.extend(op1.id)
+	if op1.pk_list is None or len(op1.pk_list) == 0:
+	    new_op.pk_list = op2.pk_list
+	else:
+	    new_op.pk_list = op1.pk_list
 	
 	op1_child.extend(op1.child_list)
 	op2_child.extend(op2.child_list)
