@@ -17,6 +17,7 @@
 import strategy
 import op
 import node
+import util
 
 class Op(object):
     id = None
@@ -78,6 +79,52 @@ class Op(object):
 		    else:
 			tmp_name = node.child.child.table_name
 		    table_list.append(tmp_name)
+
+	    # set map output
+	    for table in table_list:
+                tn = table
+                tn_alias = table
+
+                if table in node.table_alias_dic.keys():
+                    tn = node.table_alias_dic[table]
+
+                tmp_exp_list = node.getMapOutput(tn_alias)
+
+                for exp in tmp_exp_list:
+                    new_exp = expression.Column(tn, exp.column_name)
+                    new_exp.column_name = int(new_exp.column_name)
+                    new_exp.column_type = exp.column_type
+                    if tn in op.map_output.keys():
+                        if util.isExpInList(op.map_output[tn], new_exp) is False:
+                            op.map_output[tn].append(new_exp)
+                    else:
+                        tmp = []
+                        tmp.append(new_exp)
+                        op.map_output[tn] = tmp
+
+		# set map filter
+                tmp_where = node.getMapFilter(tn_alias)
+                if tmp_where is not None:
+                    col_list = []
+                    tmp_where.where_condition.getPara(col_list)
+                    for col in col_list:
+                        if col.table_name in node.table_alias_dic.keys():
+                            col.table_name = node.table_alias_dic[col.table_name]
+
+                    if tn in op.map_filter.keys():
+                        op.map_filter[tn].append(tmp_where.where_condition_exp)
+                    else:
+                        tmp = []
+                        tmp.append(tmp_where.where_condition_exp)
+                        op.map_filter[tn] = tmp
+                else:
+                    cons = expression.Constant(True, "BOOLEAN")
+                    if tn in op.map_filter.keys():
+                        op.map_filter[tn].append(cons)
+                    else:
+                        tmp = []
+                        tmp.append(cons)
+                        op.map_filter[tn] = tmp
 
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):

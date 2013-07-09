@@ -44,6 +44,12 @@ def searchColumn(column_name):
 
     return ret_list
 
+def isExpInList(exp_list, exp):
+    for tmp in exp_list:
+	if tmp.compare(exp):
+	    return True
+    return False
+
 def printExpList(exp_list):
     if exp_list is None:
 	return
