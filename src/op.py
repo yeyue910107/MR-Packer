@@ -48,90 +48,25 @@ class Op(object):
 
     def postProcess(self):
 	node_list = []
-	for tmp_node in self.map_phase:
-	    if tmp_node not in node_list:
-		node_list.append(tmp_node)
-	for tmp_node in self.reduce_phase:
-	    if tmp_node not in node_list:
-		node_list.append(tmp_node)
+	for x in self.map_phase:
+	    if x not in node_list:
+		node_list.append(x)
+	for x in self.reduce_phase:
+	    if x not in node_list:
+		node_list.append(x)
 	print "node_list", node_list
-	for pk in self.pk_list:
-	    if isinstance(pk, expression.Column) and pk.table_name not in pk_dic.keys():
-		pk_dic[pk.table_name] = pk
-
-	table_list = []
-	for tmp_node in node_list:
-	    if isinstance(tmp_node, node.JoinNode):
-		if isinstance(tmp_node.left_child, node.SPNode) and isinstance(tmp_node.left_child.child, node.TableNode):
-		    tmp_name = ""
-		    if tmp_node.left_child.child.table_alias != "":
-			tmp_name = tmp_node.left_child.child.table_alias
-		    else:
-			tmp_name = tmp_node.left_child.table_name
-		    table_list.append(tmp_name)
-		if isinstance(tmp_node.right_child, node.SPNode) and isinstance(tmp_node.right_child.child, node.TableNode):
-		    tmp_name = ""
-		    if tmp_node.right_child.child.table_alias != "":
-			tmp_name = tmp_node.right_child.child.table_alias
-		    else:
-			tmp_name = tmp_node.right_child.table_name
-		    table_list.append(tmp_name)
-	    if isinstance(tmp_node, node.GroupbyNode) or isinstance(tmp_node, node.OrderbyNode):
-		if isinstance(tmp_node.child, node.SPNode) and isinstance(tmp_node.child.child, node.TableNode):
-		    tmp_name = ""
-		    if tmp_node.child.child.table_alias != "":
-			tmp_name = tmp_node.child.child.table_alias
-		    else:
-			tmp_name = tmp_node.child.child.table_name
-		    table_list.append(tmp_name)
-	    
-
-	    print "table_list", table_list
-	    # set map output
-	    for table in table_list:
-                tn = table
-                tn_alias = table
-
-                if table in tmp_node.table_alias_dic.keys():
-                    tn = tmp_node.table_alias_dic[table]
-
-                tmp_exp_list = tmp_node.getMapOutput(tn_alias)
-
-                for exp in tmp_exp_list:
-                    new_exp = expression.Column(tn, exp.column_name)
-                    new_exp.column_name = int(new_exp.column_name)
-                    new_exp.column_type = exp.column_type
-                    if tn in op.map_output.keys():
-                        if util.isExpInList(op.map_output[tn], new_exp) is False:
-                            op.map_output[tn].append(new_exp)
-                    else:
-                        tmp = []
-                        tmp.append(new_exp)
-                        op.map_output[tn] = tmp
-
-		# set map filter
-                tmp_where = tmp_node.getMapFilter(tn_alias)
-                if tmp_where is not None:
-                    col_list = []
-                    tmp_where.where_condition.getPara(col_list)
-                    for col in col_list:
-                        if col.table_name in tmp_node.table_alias_dic.keys():
-                            col.table_name = tmp_node.table_alias_dic[col.table_name]
-
-                    if tn in op.map_filter.keys():
-                        op.map_filter[tn].append(tmp_where.where_condition_exp)
-                    else:
-                        tmp = []
-                        tmp.append(tmp_where.where_condition_exp)
-                        op.map_filter[tn] = tmp
-                else:
-                    cons = expression.Constant(True, "BOOLEAN")
-                    if tn in op.map_filter.keys():
-                        op.map_filter[tn].append(cons)
-                    else:
-                        tmp = []
-                        tmp.append(cons)
-                        op.map_filter[tn] = tmp
+	
+	for x in self.map_phase:
+	    if isinstance(x, node.SPNode) and x.child not in node_list:
+		tn = x.table_list[0]
+		self.map_output[tn] = []
+		self.map_filter[tn] = []
+		for exp in x.select_list.exp_list:
+		    if isinstance(exp, expression.Column):
+			self.map_output[tn].append(exp)
+		if x.where_condition is not None:
+		    self.map_filter[tn].append(x.where_condition.where_condition_exp)
+		
 
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):
