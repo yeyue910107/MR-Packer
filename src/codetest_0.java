@@ -1,4 +1,4 @@
-	public static class Map extends  Mapper<Object, Text, , Text>{
+	public static class Map extends  Mapper<Object, Text, IntWritable, Text>{
 
 		private String filename;
 		private int filetag = -1;
@@ -10,6 +10,12 @@
 			last_index = last_index - 1;
 			start_index = path.lastIndexOf('/', last_index);
 			filename = path.substring(start_index + 1, last_index + 1);
+			if (filename.compareTo("TINNER") == 0){
+				filetag = 1;
+			}
+			if (filename.compareTo("TOUTER") == 0){
+				filetag = 2;
+			}
 		}
 
 		public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
@@ -17,13 +23,29 @@
 			String line = value.toString();
 			String[] line_buf= line.split("\\|");
 			BitSet dispatch = new BitSet(32);
+			if (filetag == 1){
+
+				if (){
+
+						context.write(new IntWritable(), new Text(1+"|"+dispatch.toString()+"|"+(Double.parseDouble(line_buf[1]) / 7.0)));
+				}
+			}
+
+			if (filetag == 2){
+
+				if (){
+
+						context.write(new IntWritable(), new Text(2+"|"+dispatch.toString()+"|"+(Double.parseDouble(line_buf[1]) / 7.0)));
+				}
+			}
+
 		}
 
 	}
 
-	public static class Reduce extends Reducer<, Text, NullWritable, Text> {
+	public static class Reduce extends Reducer<IntWritable, Text, NullWritable, Text> {
 
-		public void reduce( key, Iterable<Text> v, Context context) throws IOExceptiuon, InterruptedException {
+		public void reduce(IntWritable key, Iterable<Text> v, Context context) throws IOExceptiuon, InterruptedException {
 
 			Iterator values = v.iterator();
 			ArrayList[] tmp_output = new ArrayList[1];

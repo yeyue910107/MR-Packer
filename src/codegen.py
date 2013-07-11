@@ -47,6 +47,8 @@ def genSelectFunctionCode(exp, buf_dic):
     return ret_str
 
 def genParaCode(para, buf_dic, flag=False, groupby_exp_list=None, hash_key=None):
+    ret_str = ""
+    print "para", para
     if isinstance(para, expression.Column):
         ret_str += __genParaCode__(para.column_type, para.column_name, buf_dic[para.table_name])
     elif isinstance(para, expression.Function):
@@ -55,7 +57,7 @@ def genParaCode(para, buf_dic, flag=False, groupby_exp_list=None, hash_key=None)
         else:
             ret_str += genSelectFunctionCode(para, buf_dic)
     else:
-        ret_str += para.cons_value
+        ret_str += para.const_value
     return ret_str
 
 def genGroupbyExpCode(exp, buf_dic, groupby_exp_list, hash_key):
@@ -137,7 +139,7 @@ def genWhereExpCode(exp, buf_dic):
             for tmp_exp in exp.para_list:
                 if isinstance(tmp_exp, expression.Column):
                     if tmp_exp.table_name != "AGG":
-                        tmp_str = genParaCode(tmp_exp.column_type, tmp_exp.column_name, buf_dic[tmp_exp.table_name])
+                        tmp_str = __genParaCode__(tmp_exp.column_type, tmp_exp.column_name, buf_dic[tmp_exp.table_name])
                     else:
                         tmp_str = buf_dic[tmp_exp.table_name] + "[" + str(tmp_exp.column_name) + "]"
                     value_type = tmp_exp.column_type
@@ -197,7 +199,7 @@ def getKeyValueType(exp_list):
         elif isinstance(exp, expression.Function):
             res = sql_type_dic[exp.getValueType()]
         else:
-            res = sql_type_dic[exp.cons_type]
+            res = sql_type_dic[exp.const_type]
     return res
 
 def genMRKeyValue(exp_list, value_type, buf_dic):
@@ -207,11 +209,11 @@ def genMRKeyValue(exp_list, value_type, buf_dic):
         return res
     for exp in exp_list:
         if isinstance(exp, expression.Column):
-            res += genParaCode(exp.column_type, exp.column_name, buf_dic[exp.table_name])
+            res += __genParaCode__(exp.column_type, exp.column_name, buf_dic[exp.table_name])
         elif isinstance(exp, expression.Function):
             res += genSelectFunctionCode(exp, buf_dic)
         else:
-            res += genParaCode(exp.cons_type, exp.cons_value, None)
+            res += __genParaCode__(exp.const_type, exp.const_value, None)
         if value_type == "TEXT":
             res += "+ \"\" +"
         else:
@@ -443,7 +445,7 @@ def genOpCode(op, fo):
     for tb in op.map_output.keys():
         tb_name_tag[tb] = i
         buf_dic[tb] = line_buf
-        map_key_type = getKeyValueType(op.pk_dic[tb][0])
+        map_key_type = getKeyValueType(op.pk_dic[tb])
         i += 1
     map_value_type = "Text"
     
@@ -459,7 +461,7 @@ def genOpCode(op, fo):
     print >> fo, "\t\t\tfilename = path.substring(start_index + 1, last_index + 1);"
     for table_name in tb_name_tag.keys():
         print >> fo, "\t\t\tif (filename.compareTo(\"" + table_name + "\") == 0){"
-        print >> fo, "\t\t\t\tfiletag = " + str(tb_name_tag[tn]) + ";"
+        print >> fo, "\t\t\t\tfiletag = " + str(tb_name_tag[table_name]) + ";"
         print >> fo, "\t\t\t}"
     print >> fo, "\t\t}\n"
 
@@ -469,9 +471,9 @@ def genOpCode(op, fo):
     print >> fo, "\t\t\tBitSet dispatch = new BitSet(32);"
 
     for table_name in op.map_output.keys():
-        map_key = genMRKeyValue(node.pk_dic[table_name][0], map_key_type, buf_dic)
-        print >> fo, "\t\t\tif (filetag == )" + str(tb_name_tag[table_name]) + "){\n"
-        map_value = genMRKeyValue(node.map_output[table_name], map_value_type, buf_dic)
+        map_key = genMRKeyValue(op.pk_dic[table_name], map_key_type, buf_dic)
+        print >> fo, "\t\t\tif (filetag == " + str(tb_name_tag[table_name]) + "){\n"
+        map_value = genMRKeyValue(op.map_output[table_name], map_value_type, buf_dic)
 
         map_filter = {}
         for key in op.map_filter.keys():
@@ -485,10 +487,10 @@ def genOpCode(op, fo):
                     para_list.append(value)
                     where_exp = expression.Function("OR", para_list)
             map_filter[key] = where_exp
-        if table_name in op.map_filter.keys():
+        if table_name in map_filter.keys():
             print >> fo, "\t\t\t\tif (" + genWhereExpCode(map_filter[table_name], buf_dic) + "){\n"
 
-            for map_node in op.map_phase:
+            '''for map_node in op.map_phase:
                 if isinstance(map_node, node.GroupbyNode):
                     # TODO
                     if table_name in map_node.table_list and map_node.child.where_condition is not None:
@@ -522,7 +524,7 @@ def genOpCode(op, fo):
             output += ");"
             print >> fo, output
 
-            print >> fo, "\t\t\t\t\telse"
+            print >> fo, "\t\t\t\t\telse"'''
             output = "\t\t\t\t\t\tcontext.write("
             output += "new " + map_key_type + "(" + map_key + ")"
             output += ", "
@@ -552,7 +554,7 @@ def genOpCode(op, fo):
     
     print >> fo, "\t\t\tIterator values = v.iterator();"
     print >> fo, "\t\t\tArrayList[] tmp_output = new ArrayList[" + str(len(op.reduce_phase)) + "];"
-    print >> fo, "\t\t\tfor (int i = 0; i < )" + str(len(op.reduce_phase)) + "; i++) {\n"
+    print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(op.reduce_phase)) + "; i++) {\n"
     print >> fo, "\t\t\t\ttmp_output[i] = new ArrayList();"
     print >> fo ,"\t\t\t}"
 

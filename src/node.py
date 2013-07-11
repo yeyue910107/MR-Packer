@@ -196,7 +196,7 @@ class Node(object):
     def toOp(self):
 	pass
 
-    def getPartitionKey(self):
+    def getPartitionKey(self, to_origin=True):
 	pass
 
     def postProcess(self):
@@ -446,16 +446,18 @@ class SPNode(Node):
 	self.child.genColumnIndex()
 
     def getMapOutput(self, table_name):
-	if isinstance(self.child, TableNode):
+	'''if isinstance(self.child, TableNode):
 	    return copy.deepcopy(self.select_list.exp_list)
 	else:
-	    return self.child.getMapOutput(table_name)
+	    return self.child.getMapOutput(table_name)'''
+	return copy.deepcopy(self.select_list.exp_list)
 
     def getMapFilter(self, table_name):
-	if isinstance(self.child, TableNode):
+	'''if isinstance(self.child, TableNode):
 	    return self.where_condition
 	else:
-	    return self.child.getMapFilter(table_name)
+	    return self.child.getMapFilter(table_name)'''
+	return self.where_condition
 
     def toOp(self):
 	global op_id
@@ -470,8 +472,8 @@ class SPNode(Node):
 	util.printExpList(ret_op.pk_list)
 	return ret_op
 
-    def getPartitionKey(self):
-	return self.child.getPartitionKey()
+    def getPartitionKey(self, to_origin=True):
+	return self.child.getPartitionKey(to_origin)
 
     def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
@@ -513,7 +515,7 @@ class TableNode(Node):
     def toOp(self):
 	return None
 
-    def getPartitionKey(self):
+    def getPartitionKey(self, to_origin=True):
 	return []
 
     def __getOriginalExp__(self, exp, flag):
@@ -682,14 +684,16 @@ class GroupbyNode(Node):
 		break
 
     def getMapOutput(self, table_name):
-	if self.child is not None and self.child.select_list is not None:
+	'''if self.child is not None and self.child.select_list is not None:
 	    return copy.deepcopy(self.child.select_list.exp_list)
-	return None
+	return None'''
+	return copy.deepcopy(self.select_list.exp_list)
 
     def getMapFilter(self, table_name):
-	if self.child is not None:
+	'''if self.child is not None:
 	    return self.child.where_condition
-	return None
+	return None'''
+	return self.where_condition
 
     def toOp(self):
 	global op_id
@@ -704,9 +708,20 @@ class GroupbyNode(Node):
 	util.printExpList(ret_op.pk_list)
 	return ret_op
 
-    def getPartitionKey(self):
+    def getPartitionKey(self, to_origin=True):
 	ret_exp_list = []
-        for exp in self.groupby_clause.groupby_list:
+	tmp_exp_list = []
+	if self.groupby_clause is not None:
+	    for exp in self.groupby_clause.groupby_list:
+		if isinstance(exp, expression.Function):
+		    tmp_list = []
+	            exp.getPara(tmp_list)
+		    tmp_exp_list.extend(tmp_list)
+		else:
+		    tmp_exp_list.append(exp)
+	if to_origin is False:
+	    return tmp_exp_list
+        for exp in tmp_exp_list:
             new_exp = self.__getOriginalExp__(exp, False)
             if new_exp is not None and new_exp not in ret_exp_list:
 		ret_exp_list.append(new_exp)
@@ -814,14 +829,16 @@ class OrderbyNode(Node):
 	self.child.genColumnIndex()
 
     def getMapOutput(self, table_name):
-	if self.child is not None and self.child.select_list is not None:
+	'''if self.child is not None and self.child.select_list is not None:
 	    return copy.deepcopy(self.child.select_list.exp_list)
-	return None
+	return None'''
+	return copy.deepcopy(self.select_list.exp_list)
 
     def getMapFilter(self, table_name):
-	if self.child is not None:
+	'''if self.child is not None:
 	    return self.child.where_condition
-	return None
+	return None'''
+	return self.where_condition
 
     def toOp(self):
 	global op_id
@@ -836,7 +853,7 @@ class OrderbyNode(Node):
 	util.printExpList(ret_op.pk_list)
 	return ret_op
 
-    def getPartitionKey(self):
+    def getPartitionKey(self, to_origin=True):
 	return []
 
     def __getOriginalExp__(self, exp):
@@ -1126,17 +1143,19 @@ class JoinNode(Node):
 		    break
 
     def getMapOutput(self, table_name):
-	if table_name == "LEFT" or table_name in self.left_child.table_list or table_name in self.left_child.table_alias_dict.values():
+	'''if table_name == "LEFT" or table_name in self.left_child.table_list or table_name in self.left_child.table_alias_dict.values():
             return copy.deepcopy(self.left_child.select_list.exp_list)
 
         else:
-            return copy.deepcopy(self.right_child.select_list.exp_list)
+            return copy.deepcopy(self.right_child.select_list.exp_list)'''
+	return copy.deepcopy(self.select_list.exp_list)
 
     def getMapFilter(self, table_name):
-        if table_name in self.left_child.table_list:
-            return self.left_child.where_condition
+        '''if table_name in self.left_child.table_list:
+           return self.left_child.where_condition
         else:
-            return self.right_child.where_condition
+            return self.right_child.where_condition'''
+	return self.where_condition
 
     def toOp(self):
 	global op_id
@@ -1151,7 +1170,7 @@ class JoinNode(Node):
 	util.printExpList(ret_op.pk_list)
 	return ret_op
 
-    def getPartitionKey(self):
+    def getPartitionKey(self, to_origin=True):
 	if self.join_condition is None:
 	    return None
 	
@@ -1164,6 +1183,8 @@ class JoinNode(Node):
 	    self.join_condition.where_condition_exp.getPara(tmp_list)
 	# print tmp_list
 	print "tmp_list:", tmp_list[0].table_name, tmp_list[1].table_name
+	if to_origin is False:
+	    return tmp_list
 	for i in range(0, len(tmp_list)):
 	    new_exp = self.__getOriginalExp__(tmp_list[i], True)
 	    if new_exp is not None and new_exp not in ret_exp_list:

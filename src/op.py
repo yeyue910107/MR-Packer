@@ -26,6 +26,7 @@ class Op(object):
     mrq_cost = 0
     map_phase = None
     reduce_phase = None
+    node_list = None
     child_list = None
     parent = None
     ic_list = None	# input correlation nodes list
@@ -42,31 +43,64 @@ class Op(object):
 	self.id = []
 	self.map_phase = []
 	self.reduce_phase = []
+	self.node_list = []
 	self.child_list = []
 	self.parent = None
 	self.pk_dic = {}
 
+    def __addOutputAndFilter__(self, _node, tn):
+	if tn not in self.map_output.keys():
+	    self.map_output[tn] = []
+	self.map_output[tn].extend(_node.getMapOutput(tn))
+	print "map_output", tn, self.map_output[tn]
+	if tn not in self.map_filter.keys():
+	    self.map_filter[tn] = []
+	print "map_filter", tn, self.map_filter[tn]
+	exp = _node.getMapFilter(tn)
+	if exp is not None:
+	    print exp.evaluate()
+	    self.map_filter[tn].append(exp)
+
+    def __addPKDic__(self, _node):
+	for tn in _node.table_list:
+	    self.pk_dic[tn] = []
+	tmp_list = _node.getPartitionKey(False)
+	for exp in tmp_list:
+	    if isinstance(exp, expression.Column):
+		self.pk_dic[exp.table_name].append(exp)
+	    else:
+		for tn in self.pk_dic.keys():
+		    self.pk_dic[tn].append(exp)
+	
+	print "pk_dic", self.pk_dic
+
+    def __isReducePhaseBottom__(self, _node):
+	pass
+
+    def __getIOCorrelation__(self):
+	pass
+
     def postProcess(self):
-	node_list = []
 	for x in self.map_phase:
-	    if x not in node_list:
-		node_list.append(x)
+	    if x not in self.node_list:
+		self.node_list.append(x)
 	for x in self.reduce_phase:
-	    if x not in node_list:
-		node_list.append(x)
-	print "node_list", node_list
+	    if x not in self.node_list:
+		self.node_list.append(x)
+	print "node_list", self.node_list
 	
 	for x in self.map_phase:
-	    if isinstance(x, node.SPNode) and x.child not in node_list:
-		tn = x.table_list[0]
-		self.map_output[tn] = []
-		self.map_filter[tn] = []
-		for exp in x.select_list.exp_list:
-		    if isinstance(exp, expression.Column):
-			self.map_output[tn].append(exp)
-		if x.where_condition is not None:
-		    self.map_filter[tn].append(x.where_condition.where_condition_exp)
+	    if isinstance(x, node.SPNode) and x.child not in self.node_list:
+		self.__addOutputAndFilter__(x, x.table_list[0])
+	    if isinstance(x, node.GroupbyNode) or isinstance(x, node.OrderbyNode) and x.child not in self.node_list:
+		for tn in x.table_list:
+		    self.__addOutputAndFilter__(x, tn)
+		self.__addPKDic__(x)
 		
+	    if isinstance(x, node.JoinNode) and x.left_child not in self.node_list and x.right_child not in self.node_list:
+		for tn in x.table_list:
+		    self.__OutputAndFilter__(x, tn)
+		self.__addPKDic__(x)
 
     @staticmethod
     def merge(op1, op2, rule_type, op1_child, op2_child):
