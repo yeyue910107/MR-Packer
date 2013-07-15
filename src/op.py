@@ -75,6 +75,7 @@ class Op(object):
 	print "pk_dic", self.pk_dic
 
     def __isReducePhaseBottom__(self, _node):
+	
 	pass
 
     def __getIOCorrelation__(self):
