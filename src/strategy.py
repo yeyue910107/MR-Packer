@@ -23,7 +23,7 @@ class Rule:
 	self.rule_type = rule_type
 
     @staticmethod
-    def __pk_compare__(pk_list1, pk_list2):
+    def __pklist_compare__(pk_list1, pk_list2):
 	ret = True
 
         if pk_list1 is None or pk_list2 is None or len(pk_list1) == 0 or len(pk_list2) == 0:
@@ -41,6 +41,16 @@ class Rule:
                 ret = False
         return ret
 
+    @staticmethod
+    def __pk_compare__(pk1, pk2):
+	if pk1 is None or pk2 is None or len(pk1) == 0 or len(pk2) == 0:
+	    return True
+	for x in pk1:
+	    for y in pk2:
+		if Rule.__pklist_compare__(x, y):
+		    return True
+	return False
+
     def checkRule(self, op1, op2):
 	print "check rule:******"
 	print "op1:"
@@ -48,12 +58,15 @@ class Rule:
 	print "op2:"
 	op2.__print__()
 	print "pk1_list:"
-	util.printExpList(op1.pk_list)
+	for pk in op1.pk_list:
+	    util.printExpList(pk)
 	print "pk2_list:"
-	util.printExpList(op2.pk_list)
-	if self.__pk_compare__(op1.pk_list, op2.pk_list) is False:
+	for pk in op2.pk_list:
+	    util.printExpList(pk)
+	if Rule.__pk_compare__(op1.pk_list, op2.pk_list) is False:
 	    return False
 	print "pk_compare is true!!!!!!!!"
+	print "self.ruletype:", self.rule_type
 	if self.rule_type == 1:
 	    if isinstance(op1, op.SpjOp) and isinstance(op2, op.Op):
 		print "use rule 1......"
@@ -99,8 +112,12 @@ class Rule:
 	elif self.rule_type == 2:
 	    new_op.map_phase.extend(op1.map_phase)
 	    new_op.map_phase.extend(op2.map_phase)
+	    new_op.reduce_phase.extend(op1.reduce_phase)
 	    new_op.reduce_phase.extend(op2.reduce_phase)
-	    new_op.reduce_phase.extend(op2.map_phase)
+	    '''for _node in op2.map_phase:
+		if _node not in new_op.reduce_phase:
+		    new_op.reduce_phase.append(_node)
+	    #new_op.reduce_phase.extend(op2.map_phase)'''
 	elif self.rule_type == 3:
 	    new_op.reduce_phase.extend(op2.reduce_phase)
 	    new_op.reduce_phase.extend(op1.map_phase)
@@ -110,3 +127,24 @@ class Rule:
 	    new_op.reduce_phase.extend(op1.reduce_phase)
 	    new_op.reduce_phase.extend(op2.map_phase)
 	return new_op
+
+    @staticmethod
+    def get_st(op1, op2):
+	if op1.isSp() and op2.isSp():
+	    return 1
+	if op1.isSp() and op2.isSp() is False:
+	    if op1.criticalFun():
+		return 1
+	    return 3
+	if isinstance(op1, op.SpjOp) and op2.isSp():
+	    if op2.criticalFun():
+		return 1
+	    return 4
+	if isinstance(op1, op.SpjOp) and op1.isSp() is False and op2.isSp() is False:
+	    return 1
+	if isinstance(op1, op.SpjeOp):
+	    if op2.isSp():
+		if op2.criticalFun() is False:
+		    return 4
+	    return 2
+	    

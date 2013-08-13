@@ -25,7 +25,7 @@ import os
 
 if __name__ == "__main__":
     pwd = os.getcwd()
-    _file = open("../test/21.xml", "r")
+    _file = open("../test/17.xml", "r")
     schema = "../test/tpch.schema"
     pt = ast.astToQueryPlan(schema, _file)
     _file.close()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     mrq.optimize()
     mrq.postProcess()
 
-    '''codedir = "./code"
+    codedir = "./code"
     jardir = "./jar"
     if os.path.exists(codedir) or os.path.exists(jardir):
         pass
@@ -42,13 +42,9 @@ if __name__ == "__main__":
         os.makedirs(jardir)
     os.chdir(codedir)
     codegen.genCode(mrq, "testquery")
-    os.chdir(pwd)
-    os.chdir(jardir)
-    fo = open(config.scriptname,'w')
-    compile_class(codedir,fo)
-    generate_jar(jardir, )
-    os.chdir(pwd)
+    os.
+    codegen.compileCode(codedir, )
     #mrq.postProcess()
-    #mrq.getLowCostMRQ(sys.argv[1])'''
-    codegen.genCode(mrq, "testquery")
+    #mrq.getLowCostMRQ(sys.argv[1])
+    #codegen.genCode(mrq, "testquery")
     #_file.close()

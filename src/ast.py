@@ -212,7 +212,7 @@ class OnConditionParser(ASTreeNodeParser):
 	self.source = on_condition
 	self.real_struct = None
 	self.converted_str = self.convertItemListToStr(self.source)
-	where_condition_parser = WhereConditionParser()
+	where_condition_parser = WhereConditionParser(None)
 	self.on_condition_exp = where_condition_parser.convertItemListToExpList(self.source)
 	self.converted_exp_str = where_condition_parser.convertExpListToStr(self.on_condition_exp)
 

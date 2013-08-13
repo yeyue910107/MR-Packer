@@ -50,6 +50,14 @@ def isExpInList(exp_list, exp):
 	    return True
     return False
 
+def printExpDic(exp_dic):
+    if exp_dic is None:
+	return
+    for key in exp_dic.keys():
+	print "key:", key
+	print "value:"
+	printExpList(exp_dic[key])
+
 def printExpList(exp_list):
     if exp_list is None:
 	return

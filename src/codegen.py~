@@ -14,14 +14,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-import sys
-import commands
-#import path from os
 import expression
 import copy
 import node
 import util
 
+front = -1
+end = 0
 math_func_dic = { "PLUS":" + ", "MINUS":" - ", "DIVIDE":" / ", "MULTIPLY":" * " }
 agg_func_list = [ "SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT" ]
 bool_func_dic = { "AND":" && ", "OR":" || " }
@@ -92,7 +91,7 @@ def genGroupbyExpCode(exp, buf_dic, groupby_exp_list, hash_key):
 def __genParaCode__(para_type, value, buf_name):
     ret_str = ""
     if buf_name is not None:
-        if para_type == "INTEGER":
+        if para_type == "INTERGER":
             ret_str = "Integer.parseInt(" + buf_name + "[" + str(value) + "])"
         elif para_type == "DECIMAL":
             ret_str = "Double.parseDouble(" + buf_name + "[" + str(value) + "])"
@@ -124,7 +123,6 @@ def genValueCode(value_type, value_name, value_list):
     elif value_name in bool_func_dic.keys():
         count = 0
         for value in value_list:
-	    print "value", value
             count = count + 1
             if count != len(value_list):
                 ret_str = ret_str + value + bool_func_dic[value_name]
@@ -152,8 +150,8 @@ def genWhereExpCode(exp, buf_dic):
                     tmp_str = genWhereExpCode(tmp_exp, buf_dic)
                     value_type = "DECIMAL"
                 else:
-                    tmp_str = tmp_exp.const_value
-                    value_type = tmp_exp.const_type
+                    tmp_str = tmp_exp.cons_value
+                    value_type = tmp_exp.cons_type
                 tmp_list.append(tmp_str)
             if len(tmp_list) != 2:
                 # TODO ERROR
@@ -168,9 +166,8 @@ def genWhereExpCode(exp, buf_dic):
                 tmp_list.append(tmp_str)
             ret_str = genValueCode(value_type, exp.func_name, tmp_list)
         else:
-            #ret_str += "("
+            ret_str += "("
             if exp.func_name == "IS":
-                ret_str += "("
                 [para1, para2] = exp.para_list
                 if isinstance(para1, expression.Column):
                     ret_str += buf_dic[para1.table_name] + "[" + str(para1.column_name) + "]"
@@ -217,7 +214,6 @@ def genMRKeyValue(exp_list, value_type, buf_dic):
 	print "gen mr key value"
 	print exp.evaluate()
         if isinstance(exp, expression.Column):
-	    print "column_type:", exp.column_type
             res += __genParaCode__(exp.column_type, exp.column_name, buf_dic[exp.table_name])
         elif isinstance(exp, expression.Function):
             res += genSelectFunctionCode(exp, buf_dic)
@@ -227,7 +223,6 @@ def genMRKeyValue(exp_list, value_type, buf_dic):
             res += "+ \"\" +"
         else:
             res += "+"
-    print "res:", res
     res = res[:-1]
     return res
 
@@ -415,27 +410,8 @@ def isSelfJoin(node):
     #TODO
     return False
 
-def genHeader(fo):
-    #print >>fo, "package " + packagename + ";" 
-    print >>fo,"import java.io.IOException;"
-    print >>fo,"import java.util.*;"
-    print >>fo,"import java.text.*;"
-    print >>fo,"import org.apache.hadoop.fs.Path;"
-    print >>fo,"import org.apache.hadoop.conf.*;"
-    print >>fo,"import org.apache.hadoop.io.*;"
-    print >>fo,"import org.apache.hadoop.util.Tool;"
-    print >>fo,"import org.apache.hadoop.util.ToolRunner;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Job;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Mapper;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Reducer;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.input.FileSplit;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.partition.*;"
-    print >>fo,"\n"
-
 def genOpCode(op, fo):
+    global end
     #op.postProcess()
     line_buf = "line_buf"
     map_key_type = ""
@@ -443,17 +419,18 @@ def genOpCode(op, fo):
     # get op input tables
     tb_name_tag = {}
     index_name = {}
-    print "**************************OP", op.id
+
     print "before"
     print "child_list", op.child_list
     print "map_output:"
     util.printExpDic(op.map_output)
     print "pk_dic:"
     util.printExpDic(op.pk_dic)
-    if op.map_output != None:
+    if op.map_output == {}:
         for child in op.child_list:
 	    index = op.child_list.index(child)
-            tb_name = "testquery" + str(child.id[0])
+            tb_name = "testquery" + str(end + 1)
+	    end = end + 1
             index_name[index] = tb_name
             op.pk_dic[tb_name] = copy.deepcopy(op.pk_dic[index])
             del op.pk_dic[index]
@@ -461,10 +438,7 @@ def genOpCode(op, fo):
             for exp in op.pk_dic[tb_name]:
 	        print exp.evaluate()
                 exp.table_name = tb_name
-	    print "child_map_phase", child.map_phase
-	    print "child_reduce_phase", child.reduce_phase
-	    print "child_node_list", child.node_list
-            exp_list = child.output_node.select_list.exp_list
+            exp_list = child.node_list[-1].select_list.exp_list
             tmp_exp_list = []
             for exp in exp_list:
 	        print "old_exp", exp.evaluate()
@@ -532,12 +506,7 @@ def genOpCode(op, fo):
                     para_list.append(value)
                     where_exp = expression.Function("OR", para_list)
             map_filter[key] = where_exp
-	print "map_filter"
-	for key in map_filter.keys():
-	    if map_filter[key] is not None:
-	        print key, map_filter[key].evaluate()
-	print "table_name:", table_name
-        if table_name in map_filter.keys() and map_filter[table_name] is not None:
+        if table_name in map_filter.keys():
             print >> fo, "\t\t\t\tif (" + genWhereExpCode(map_filter[table_name], buf_dic) + "){\n"
 
             '''for map_node in op.map_phase:
@@ -657,10 +626,10 @@ def genOpCode(op, fo):
             tmp_line_counter = line_counter + "_" + reduce_node_index
             gb_exp_list = []
             getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
-	    if reduce_node.child in op.node_list and isinstance(reduce_node.child, node.SPNode) and isinstance(reduce_node.child.child, node.TableNode):
+	    if isinstance(reduce_node.child, node.SPNode) and isinstance(reduce_node.child.child, node.TableNode):
                 table_name = reduce_node.child.child.table_name
 	    else:
-	        table_name = index_name[0]
+		table_name = index_name[0]
             
             print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)){\n"
 	    print "gb_exp_list"
@@ -697,9 +666,12 @@ def genOpCode(op, fo):
             reduce_node_index = str(op.map_phase.index(reduce_node))
             tmp_left_array = left_array + "_" + reduce_node_index
             tmp_right_array = right_array + "_" + reduce_node_index
-            if reduce_node.left_child in op.node_list and isinstance(reduce_node.left_child, node.SPNode) and isinstance(reduce_node.left_child.child, node.TableNode):
+            if isinstance(reduce_node.left_child, node.SPNode) and isinstance(reduce_node.left_child.child, node.TableNode):
                 left_table_name = reduce_node.left_child.child.table_name
             else:
+                if len(op.child_list) != 2:
+                    # TODO error
+                    return
                 left_table_name = index_name[0]
             print "tb_name_tag", tb_name_tag
             if_stat = "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[left_table_name]) + "' && (dispatch.length() == 0 || "
@@ -711,14 +683,14 @@ def genOpCode(op, fo):
             print >> fo, if_stat
             print >> fo, "\t\t\t\t\t" + tmp_left_array + ".add(tmp);"
 
-            if reduce_node.right_child in op.node_list and isinstance(reduce_node.right_child, node.SPNode) and isinstance(reduce_node.right_child.child, node.TableNode):
+        
+            if isinstance(reduce_node.right_child, node.SPNode) and isinstance(reduce_node.right_child.child, node.TableNode):
                 right_table_name = reduce_node.right_child.child.table_name
             else:
-		print "index_name", index_name
-		if len(index_name) == 1:
-                    right_table_name = index_name[0]
-		else:
-		    right_table_name = index_name[1]
+                if len(op.child_list) != 2:
+                    # TODO error
+                    return
+                right_table_name = index_name[1]
             
             if_stat = "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[right_table_name]) + "' && (dispatch.length() == 0 || "
             if self_join_flag is False:
@@ -744,7 +716,7 @@ def genOpCode(op, fo):
             gb_exp_list = []
             getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
             for exp in gb_exp_list:
-                exp_index = str(gb_exp_list.index(exp))
+                exp_index = gb_exp_list.index(exp)
                 if not isinstance(exp, expression.Function):
                     # TODO error
                     return
@@ -901,270 +873,274 @@ def genOpCode(op, fo):
                 print >> fo, "\t\t\t}"
 
         # TODO
-    for reduce_node in op.reduce_phase:
-        if reduce_node not in op.oc_list:
-            continue
-        if isinstance(reduce_node, node.GroupbyNode):
+        for reduce_node in op.reduce_phase:
+            if reduce_node not in op.oc_list:
+                continue
             reduce_node_index = op.reduce_phase.index(reduce_node.child)
-            tmp_gb_input = "tmp_output[" + str(reduce_node_index) + "]"
-            gb_exp_list = []
-            getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
-               
-            key_len = len(reduce_node.groupby_clause.groupby_list)
-            tmp_output_len = len(gb_exp_list)
-            tmp_gb_output = "tmp_gb_output_" + str(op.reduce_phase.index(reduce_node))
-            tmp_dc_output = "tmp_dc_output_" + str(op.reduce_phase.index(reduce_node))
-            tmp_count_output = "tmp_count_output_" + str(op.reduce_phase.index(reduce_node))
-            print >> fo, "\t\t\tHashtable<String, Double>[] " + tmp_gb_output + " = new Hashtable<String, Double>[" + str(tmp_output_len) + "]();"
-            print >> fo, "\t\t\tHashtable<String, ArrayList>[] " + tmp_dc_output + " = new Hashtable<String, ArrayList>[" + str(tmp_output_len) + "]();"
-            print >> fo, "\t\t\tHashtable<String, Integer>[] " + tmp_count_output + " = new Hashtable<String, Integer>[" + str(tmp_output_len) + "]();"
-            print >> fo, "\t\t\tfor (int i = 0; i < " + str(tmp_output_len) + "; i++) {"
-            print >> fo, "\t\t\t\t" + tmp_gb_output + "[i] = new Hashtable<String, Double>();"
-            print >> fo, "\t\t\t\t" + tmp_dc_output + "[i] = new Hashtable<String, ArrayList>();"
-            print >> fo, "\t\t\t\t" + tmp_count_output + "[i] = new Hashtable<String, Integer>();"
-            print >> fo, "\t\t\t}"
-            print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++) {"
-            print >> fo, "\t\t\t\tString[] tmp_buf = ((String)" + tmp_gb_input + ".get(i)).split(\"\\|\");"
-               
-            tmp_key = ""
-            for i in range(0, key_len):
-                tmp_key += "tmp_buf[" + str(i) + "] + "
-                tmp_key += "\"|\""
-            tmp_key = tmp_key[:-1]
-              
-            for i in range(0, tmp_output_len):
-                exp = gb_exp_list[i]
-                func_name = exp.getGroupbyFuncName()
-                if func_name == "MAX":
-                    tmp = genSelectFuncCode(exp, buf_dict)
-                    print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey("+tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tDouble max_tmp = (double)" + tmp  + ";"
-                    print >> fo, "\t\t\t\t\tif (max_tmp > " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
-                    print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", max_tmp);"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                elif func_name == "MIN":
-                    tmp = genSelectFuncCode(exp, buf_dict)
-                    print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tDouble min_tmp = (double)" + tmp +";"
-                    print >> fo, "\t\t\t\t\tif (min_tmp < " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
-                    print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", min_tmp);"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                elif func_name == "SUM": 
-                    tmp = genSelectFuncCode(exp, buf_dict)
-                    print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
-                    print >> fo, "\t\t\t\t\t sum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");";
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                elif func_name == "AVG":
-                    tmp = genSelectFunctionCode(exp, buf_dic)
-                    print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
-                    print >> fo, "\t\t\t\t\tsum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
-                    print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ") + 1;"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + " ,count);"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", 1);"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] += 1;"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] = 1;"
-                    print >> fo, "\t\t\t}"
-                    
-                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[" + str(i) + "].keySet()) {"
-                    print >> fo, "\t\t\t\tDouble count = (double) " + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
-                    print >> fo, "\t\t\t\tDouble avg = " + tmp_gb_output + "[" + str(i) + "].get(tmp_key)/count;"
-                    print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), avg);"
-                    print >> fo, "\t\t\t}"
-                elif func_name == "COUNT_DISTINCT":
-                    tmp = genSelectFuncCode(exp, buf_dict)
-                    print >> fo, "\t\t\t\tif (" + tmp_dc_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tif (!" + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").contains(" + tmp + ")){"
-                    print >> fo, "\t\t\t\t\t\tArrayList tmp_al = " + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").add(" + tmp + ");"
-                    print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + ", tmp_al);"
-                    print >> fo, "\t\t\t\t\t}"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + "," + tmp + ");"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                      
-                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_dc_output + "[" + str(i) + "].keySet()) {"
-                    print >> fo, "\t\t\t\tDouble count = (double)" + tmp_dc_output + "[" + str(i) + "].get(tmp_key).size();"
-                    print >> fo, "\t\t\t\t" + tmp_gb_output +"[" + str(i) + "].put(tmp_key.toString(), count);"
-                    print >> fo, "\t\t\t}"
-                elif func_name == "COUNT":
-                    print >> fo, "\t\t\t\tif (" + tmp_count_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
-                    print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ")+1;"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", count);"
-                    print >> fo, "\t\t\t\t} else {"
-                    print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ",1);"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                        
-                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_count_output + "[" + str(i) + "].keySet()) {"
-                    print >> fo, "\t\t\t\tDouble count = (double)" + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
-                    print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), count);"
-                    print >> fo, "\t\t\t}"
+            if isinstance(reduce_node, node.GroupbyNode):
+                tmp_gb_input = "tmp_output[" + str(reduce_node_index) + "]"
+                gb_exp_list = []
+                getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
                 
-            print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[0].keySet()) {"
-            print >> fo, "\t\t\t\tString[] tmp_buf = ((String) " + tmp_gb_input + ".get(0)).split(\"\\\|\");"
-            print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++){"
-            print >> fo, "\t\t\t\t\ttmp_buf = ((String) " + tmp_gb_input + ".get(i)).split(\"\\\|\");"
-            print >> fo, "\t\t\t\t\tif (((String)tmp_key).compareTo(" + tmp_key + ") == 0)"
-            print >> fo, "\t\t\t\t\t\tbreak;"
-            print >> fo, "\t\t\t\t}"
-            # TODO having clause
+                key_len = len(reduce_node.groupby_clause.groupby_exp_list)
+                tmp_output_len = len(gb_exp_List)
+                tmp_gb_output = "tmp_gb_output_" + str(op.reduce_phase.index(reduce_node))
+                tmp_dc_output = "tmp_dc_output_" + str(op.reduce_phase.index(reduce_node))
+                tmp_count_output = "tmp_count_output_" + str(op.reduce_phase.index(reduce_node))
+                print >> fo, "\t\t\tHashtable<String, Double>[] " + tmp_gb_output + " = new Hashtable<String, Double>[" + str(tmp_output_len) + "]();"
+                print >> fo, "\t\t\tHashtable<String, ArrayList>[] " + tmp_dc_output + " = new Hashtable<String, ArrayList>[" + str(tmp_output_len) + "]();"
+                print >> fo, "\t\t\tHashtable<String, Integer>[] " + tmp_count_output + " = new Hashtable<String, Integer>[" + str(tmp_output_len) + "]();"
+                print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_output_len + "; i++) {"
+                print >> fo, "\t\t\t\t" + tmp_gb_output + "[i] = new Hashtable<String, Double>();"
+                print >> fo, "\t\t\t\t" + tmp_dc_output + "[i] = new Hashtable<String, ArrayList>();"
+                print >> fo, "\t\t\t\t" + tmp_count_output + "[i] = new Hashtable<String, Integer>();"
+                print >> fo, "\t\t\t}"
+                print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++) {"
+                print >> fo, "\t\t\t\tString[] tmp_buf = ((String)" + tmp_gb_input + ".get(i)).split(\"\\|\");"
+                
+                tmp_key = ""
+                for i in range(0, key_len):
+                    tmp_key += "tmp_buf[" + str[i] + "] + "
+                    tmp_key += "\"|\""
+                tmp_key = tmp_key[:-1]
+                
+                for i in range(0, tmp_output_len):
+                    exp = gb_exp_list[i]
+                    func_name = exp.getGroupbyFuncName()
+                    if func_name == "MAX":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey("+tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tDouble max_tmp = (double)" + tmp  + ";"
+                        print >> fo, "\t\t\t\t\tif (max_tmp > " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", max_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "MIN":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tDouble min_tmp = (double)" + tmp +";"
+                        print >> fo, "\t\t\t\t\tif (min_tmp < " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", min_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "SUM": 
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
+                        print >> fo, "\t\t\t\t\t sum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");";
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "AVG":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
+                        print >> fo, "\t\t\t\t\tsum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
+                        print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ") + 1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + " ,count);"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ", sum_tmp);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", 1);"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] += 1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] = 1;"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[" + str(i) + "].keySet()) {"
+                        print >> fo, "\t\t\t\tDouble count = (double) " + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                        print >> fo, "\t\t\t\tDouble avg = " + tmp_gb_output + "[" + str(i) + "].get(tmp_key)/count;"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), avg);"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "COUNT_DISTINCT":
+                        tmp = genSelectFuncCode(exp, buf_dict)
+                        print >> fo, "\t\t\t\tif (" + tmp_dc_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tif (!" + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").contains(" + tmp + ")){"
+                        print >> fo, "\t\t\t\t\t\tArrayList tmp_al = " + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").add(" + tmp + ");"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + ", tmp_al);"
+                        print >> fo, "\t\t\t\t\t}"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + "," + tmp + ");"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_dc_output + "[" + str(i) + "].keySet()) {"
+                        print >> fo, "\t\t\t\tDouble count = (double)" + tmp_dc_output + "[" + str(i) + "].get(tmp_key).size();"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output +"[" + str(i) + "].put(tmp_key.toString(), count);"
+                        print >> fo, "\t\t\t}"
+                    elif func_name == "COUNT":
+                        print >> fo, "\t\t\t\tif (" + tmp_count_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
+                        print >> fo, "\t\t\t\t\tInteger count = " + tmp_count_output + "[" + str(i) + "].get(" + tmp_key + ")+1;"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ", count);"
+                        print >> fo, "\t\t\t\t} else {"
+                        print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ",1);"
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                        
+                        print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_count_output + "[" + str(i) + "].keySet()) {"
+                        print >> fo, "\t\t\t\tDouble count = (double)" + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                        print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), count);"
+                        print >> fo, "\t\t\t}"
+                
+                print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[0].keySet()) {"
+                print >> fo, "\t\t\t\tString[] tmp_buf = ((String) " + tmp_gb_input + ".get(0)).split(\"\\\|\");"
+                print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++){"
+                print >> fo, "\t\t\t\t\ttmp_buf = ((String) " + tmp_gb_input + ".get(i)).split(\"\\\|\");"
+                print >> fo, "\t\t\t\t\tif (((String)tmp_key).compareTo(" + tmp_key + ") == 0)"
+                print >> fo, "\t\t\t\t\t\tbreak;"
+                print >> fo, "\t\t\t\t}"
+                # TODO having clause
         
-        elif isinstance(reduce_node, node.JoinNode):
-            reduce_node_index = str(op.reduce_phase.index(reduce_node))
-            tmp_left_array = left_array + "_" + reduce_node_index
-            tmp_right_array = right_array + "_" + reduce_node_index
-            buf_dic = {}
-            tmp_left_buf = "left_buf_" + reduce_node_index
-            tmp_right_buf = "right_buf_" + reduce_node_index
-	    buf_dic["LEFT"] = tmp_left_buf
-	    buf_dic["RIGHT"] = tmp_right_buf
-            reduce_value_type = "Text"
-            if reduce_node.is_explicit:
-                join_type = reduce_node.join_type.upper()
-                if join_type == "LEFT":
-                    reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+            elif isinstance(reduce_node, node.JoinNode):
+                tmp_left_array = left_array + "_" + reduce_node_index
+                tmp_right_array = right_array + "_" + reduce_node_index
+                buf_dic = {}
+                tmp_left_buf = "left_buf_" + reduce_node_index
+                tmp_right_buf = "right_buf_" + reduce_node_index
+                reduce_value_type = "Text"
+                if reduce_node.is_explicit:
+                    join_type = reduce_node.join_type.upper()
+                    if join_type == "LEFT":
+                        reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+                        print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_left_array + ".size(); i++) {"
+                        print >> fo, "\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(i)).split(\"\\\|\");"
+                        print >> fo, "\t\t\t\tif (" + tmp_right_array + ".size() > 0) {"
+                        print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
+                        print >> fo, "\t\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
+                        if reduce_node.where_condition is not None:
+                            exp = reduce_node.where_condition.where_condition_exp
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                        print >> fo, "\t\t\t\t\t}"
+
+                        print >> fo, "\t\t\t\t} else {"
+                        new_list = []
+                        genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
+                        reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+                        if reduce_node.where_condition is not None:
+                            new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+  
+                    elif join_type == "RIGHT":
+                        reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+                        print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
+                        print >> fo, "\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
+                        print >> fo, "\t\t\t\tif (" + tmp_left_array + ".size() > 0) {"
+                        print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
+                        print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
+                        if reduce_node.where_condition is not None:
+                            exp = reduce_node.where_condition.where_condition_exp
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                        print >> fo, "\t\t\t\t\t}"
+
+                        print >> fo, "\t\t\t\t} else {"
+                        new_list = []
+                        genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
+                        reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+                        if reduce_node.where_condition is not None:
+                            new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+                        print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t}"
+                
+                    elif join_type == "FULL":
+                        reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+                        print >> fo, "\t\t\tif (" + tmp_left_array + ".size() > 0 && " + tmp_right_array + (".size() > 0) {")
+                        print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
+                        print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
+                        print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
+                        print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
+                        if reduce_node.where_condition is not None:
+                            exp = reduce_node.where_condition.where_condition_exp
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                        print >> fo, "\t\t\t\t\t}"
+                        print >> fo, "\t\t\t\t}"
+
+                        print >> fo, "\t\t\t}  else if (" + tmp_left_array + ".size() > 0) {"
+                        print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_left_array + ".size(); i++) {"
+                        new_list = []
+                        genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
+                        reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+                        if reduce_node.where_condition is not None:
+                            new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+                        print >> fo, "\t\t\t\t}"
+
+                        print >> fo, "\t\t\t}  else if (" + tmp_right_array + ".size() > 0) {"
+                        print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_right_array + ".size(); i++) {"
+                        new_list = []
+                        genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
+                        reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
+                        if reduce_node.where_condition is not None:
+                            new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
+                            print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
+                            print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+                            print >> fo, "\t\t\t\t\t\t}"
+                        else:
+                            print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
+
+                        print >> fo, "\t\t\t\t}"
+
+                        print >> fo, "\t\t\t}"
+                    
+                    else:
+                            # TODO error
+                        return
+                else:
                     print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_left_array + ".size(); i++) {"
                     print >> fo, "\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(i)).split(\"\\\|\");"
-                    print >> fo, "\t\t\t\tif (" + tmp_right_array + ".size() > 0) {"
-                    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
-                    print >> fo, "\t\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
-                    if reduce_node.where_condition is not None:
-                        exp = reduce_node.where_condition.where_condition_exp
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t\t}"
-
-                    print >> fo, "\t\t\t\t} else {"
-                    new_list = []
-                    genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
-                    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
-                    if reduce_node.where_condition is not None:
-                        new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-  
-                elif join_type == "RIGHT":
+                    print >> fo, "\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
+                    print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
                     reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
-                    print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
-                    print >> fo, "\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
-                    print >> fo, "\t\t\t\tif (" + tmp_left_array + ".size() > 0) {"
-                    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
-                    print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
                     if reduce_node.where_condition is not None:
                         exp = reduce_node.where_condition.where_condition_exp
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
+                        print >> fo, "\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + ") {"
                         print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t\t}"
-                    print >> fo, "\t\t\t\t} else {"
-                    new_list = []
-                    genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
-                    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
-                    if reduce_node.where_condition is not None:
-                        new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
+                        print >> fo, "\t\t\t\t\t}"
                     else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
-                
-                elif join_type == "FULL":
-                    reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
-                    print >> fo, "\t\t\tif (" + tmp_left_array + ".size() > 0 && " + tmp_right_array + (".size() > 0) {")
-                    print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_right_array + ".size(); i++) {"
-                    print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(i)).split(\"\\\|\");"
-                    print >> fo, "\t\t\t\t\tfor (int j = 0; j < " + tmp_left_array + ".size(); j++) {"
-                    print >> fo, "\t\t\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(j)).split(\"\\\|\");"
-                    if reduce_node.where_condition is not None:
-                        exp = reduce_node.where_condition.where_condition_exp
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + "( {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t\t}"
-                    print >> fo, "\t\t\t\t}"
+                        print >> fo, "\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
 
-                    print >> fo, "\t\t\t}  else if (" + tmp_left_array + ".size() > 0) {"
-                    print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_left_array + ".size(); i++) {"
-                    new_list = []
-                    genJoinList(reduce_node.select_list.exp_list, new_list, "LEFT")
-                    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
-                    if reduce_node.where_condition is not None:
-                        new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "LEFT")
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}  else if (" + tmp_right_array + ".size() > 0) {"
-                    print >> fo, "\t\t\t\tfor (int i = 0; i < )" + tmp_right_array + ".size(); i++) {"
-                    new_list = []
-                    genJoinList(reduce_node.select_list.exp_list, new_list, "RIGHT")
-                    reduce_value = genMRKeyValue(new_list, reduce_value_type, buf_dic)
-                    if reduce_node.where_condition is not None:
-                        new_where = genJoinWhere(reduce_node.where_condition.where_condition_exp, "RIGHT")
-                        print >> fo, "\t\t\t\t\t\tif (" + genWhereExpCode(new_where, buf_dic) + ") {"
-                        print >> fo, "\t\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                        print >> fo, "\t\t\t\t\t\t}"
-                    else:
-                        print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
                     print >> fo, "\t\t\t\t}"
                     print >> fo, "\t\t\t}"
-                    
-                else:
-                        # TODO error
-                    return
-            else:
-                print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_left_array + ".size(); i++) {"
-                print >> fo, "\t\t\t\tString[] " + tmp_left_buf + " = ((String) " + tmp_left_array + ".get(i)).split(\"\\\|\");"
-                print >> fo, "\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
-                print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
-                reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
-                if reduce_node.where_condition is not None:
-                    exp = reduce_node.where_condition.where_condition_exp
-                    print >> fo, "\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + ") {"
-                    print >> fo, "\t\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                    print >> fo, "\t\t\t\t\t}"
-                else:
-                    print >> fo, "\t\t\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
-                print >> fo, "\t\t\t\t}"
-                print >> fo, "\t\t\t}"
 
     # generate final output
     print >> fo, "\t\t\tNullWritable key_op = NullWritable.get();"
     for reduce_node in op.reduce_phase:
-        if len(op.oc_list) != 0 and (reduce_node not in op.oc_list or reduce_node.parent in op.oc_list):
+        if reduce_node not in op.oc_list or reduce_node.parent in op.oc_list:
             continue
         reduce_node_index = str(op.reduce_phase.index(reduce_node))
         print >> fo, "\t\t\tfor (int i = 0; i < tmp_output[" + reduce_node_index + "].size(); i++) {"
@@ -1205,30 +1181,13 @@ def genMainCode(op, fo, types, has_reduce):
     print >> fo, "\t}\n"
 
 def genCode(op, filename):
-    op_name = filename + str(op.id[0]) + ".java"
+    global front
+    op_name = filename + str(front + 1) + ".java"
+    front = front + 1
     fo = open(op_name,"w")
-    genHeader(fo)
     genOpCode(op, fo)
 
     if len(op.child_list) > 0:
         for child in op.child_list:
             genCode(child, filename)
     fo.close()
-
-'''def compileCode(codedir):
-    version = "1.0.1"
-    if "HADOOP_HOME" in os.environ:
-        version = commands.getoutput("$HADOOP_HOME/bin/hadoop version").split("\n")[0].split(" ")[1]
-
-    cmd = "javac -classpath $HADOOP_HOME/hadoop-common-" + version + ".jar:$HADOOP_HOME/hadoop-hdfs-" + version + ".jar:$HADOOP_HOME/hadoop-mapred-" + version + ".jar " 
-    cmd += codedir + "/*.java -d ."
-    print >> cmd
-    #if config.compile_jar is True:
-    os.system(cmd)
-
-def genJar(jardir, filename):
-    cmd = "jar -cf " +jardir + "/"+ filename + ".jar"
-    print >> cmd
-    #if config.compile_jar is True:
-    os.system(cmd)
-'''

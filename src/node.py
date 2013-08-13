@@ -202,6 +202,7 @@ class Node(object):
     def postProcess(self):
 	#pass
 	self.genProjectList()
+	self.__print__()
 	#if self.checkSchema() is False:
 	    # TODO error
 	    # pass
@@ -399,7 +400,7 @@ class SPNode(Node):
 	new_select_dic = {}
 	new_exp_list = []
 	# if child is table node
-	if self.select_list is None or self.child.select_list is None:
+	if isinstance(self.child, TableNode):
 	    # TODO error
 	    return
 	child_exp_list = self.child.select_list.exp_list
@@ -432,7 +433,7 @@ class SPNode(Node):
 	
 	self.child.select_list.exp_list = new_exp_list
 	self.child.select_list.exp_alias_dic = new_select_dic
-	print "sp column filter"
+	print "22222sp column filter"
 	util.printExpList(self.child.select_list.exp_list)
 	self.child.columnFilter()
 	
@@ -465,15 +466,17 @@ class SPNode(Node):
 	ret_op = op.SpjOp()
 	ret_op.id = [op_id]
 	ret_op.is_sp = True
+	ret_op.node_list.append(self)
 	ret_op.map_phase.append(self)
 	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "SPNode, PK_LIST:"
-	util.printExpList(ret_op.pk_list)
+	for pk in ret_op.pk_list:
+	    util.printExpList(pk)
 	return ret_op
 
     def getPartitionKey(self, to_origin=True):
-	return self.child.getPartitionKey(to_origin)
+	return []
 
     def __getOriginalExp__(self, exp, flag):
 	if not isinstance(exp, expression.Column):
@@ -700,12 +703,14 @@ class GroupbyNode(Node):
 	op_id = op_id + 1
 	ret_op = op.SpjeOp()
 	ret_op.id = [op_id]
+	ret_op.node_list.append(self)
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
 	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "GroupbyNode, PK_LIST:"
-	util.printExpList(ret_op.pk_list)
+	for pk in ret_op.pk_list:
+	    util.printExpList(pk)
 	return ret_op
 
     def getPartitionKey(self, to_origin=True):
@@ -720,14 +725,14 @@ class GroupbyNode(Node):
 		else:
 		    tmp_exp_list.append(exp)
 	if to_origin is False:
-	    return tmp_exp_list
+	    return [tmp_exp_list]
         for exp in tmp_exp_list:
             new_exp = self.__getOriginalExp__(exp, False)
             if new_exp is not None and new_exp not in ret_exp_list:
 		ret_exp_list.append(new_exp)
 	    if isinstance(new_exp, expression.Column):
 	        print "PartitionKey:", new_exp.table_name, new_exp.column_name
-        return ret_exp_list
+        return [ret_exp_list]
 
     '''def getPartitionKey(self):
 	ret_exp_list = []
@@ -845,12 +850,14 @@ class OrderbyNode(Node):
 	op_id = op_id + 1
 	ret_op = op.SpjOp()
 	ret_op.id = [op_id]
+	ret_op.node_list.append(self)
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
 	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "OrderbyNode, PK_LIST:"
-	util.printExpList(ret_op.pk_list)
+	for pk in ret_op.pk_list:
+	    util.printExpList(pk)
 	return ret_op
 
     def getPartitionKey(self, to_origin=True):
@@ -942,8 +949,8 @@ class JoinNode(Node):
 	super(JoinNode, self).genTableName()
 	if self.is_explicit is True:
 	    self.join_condition.on_condition_exp.genTableName(self)
-	else:
-	    self.join_condition.where_condition_exp.genTableName(self)
+	#else:
+	#    self.join_condition.where_condition_exp.genTableName(self)
 	self.left_child.genTableName()
 	self.right_child.genTableName()
 	
@@ -969,7 +976,7 @@ class JoinNode(Node):
 		    print "join_exp not none:", join_exp.evaluate()
 		    print "exp:", exp.evaluate()
 		    if self.join_condition is None:
-			self.join_condition = WhereConditionParser(None)
+			self.join_condition = ast.WhereConditionParser(None)
 		    self.join_condition.where_condition_exp = copy.deepcopy(join_exp)
 		
 	    col_list = []
@@ -1003,10 +1010,12 @@ class JoinNode(Node):
 	util.printExpList(exp_list)
 	if child.select_list is None:
 	    child.select_list = ast.SelectListParser(None)
-	'''if isinstance(child, SPNode):
+	if isinstance(child, SPNode) and isinstance(child.child, TableNode) is False:
 	    new_list = []
 	    new_dic = {}
+	    print "table_alias", child.table_alias
 	    table = util.searchTable(child.table_alias)
+	    print table
 	    if table is None:
 		# TODO error
 		return
@@ -1019,13 +1028,15 @@ class JoinNode(Node):
 		if flag is True:
 		    new_list.append(exp)
 		    new_dic[exp] = None
+	    print "new_list"
+	    util.printExpList(new_list)
 	    child.select_list.exp_alias_dic = new_dic
 	    child.select_list.exp_list = new_list
 	else:
 	    child.select_list.exp_alias_dic = select_dic
-	    child.select_list.exp_list = exp_list'''
-	child.select_list.exp_alias_dic = select_dic
-	child.select_list.exp_list = exp_list
+	    child.select_list.exp_list = exp_list
+	'''child.select_list.exp_alias_dic = select_dic
+	child.select_list.exp_list = exp_list'''
 	
     def processSelectList(self):
 	super(JoinNode, self).processSelectStar()
@@ -1088,7 +1099,6 @@ class JoinNode(Node):
 	    if join_exp is not None:
 		col_list = []
 		#print "CHILD_NAME"
-		print "CHILD:", child, child.child
 		if isinstance(child, SPNode) and isinstance(child.child, TableNode):					
 		    if self.is_explicit is True:
 			self.join_condition.on_condition_exp = self.join_condition.on_condition_exp.genIndex(child)
@@ -1162,12 +1172,14 @@ class JoinNode(Node):
 	op_id = op_id + 1
 	ret_op = op.SpjOp()
 	ret_op.id = [op_id]
+	ret_op.node_list.append(self)
 	ret_op.map_phase.append(self)
 	ret_op.reduce_phase.append(self)
 	ret_op.pk_list = self.getPartitionKey()
 	# DEBUG
 	print "JoinNode, PK_LIST:"
-	util.printExpList(ret_op.pk_list)
+	for pk in ret_op.pk_list:
+	    util.printExpList(pk)
 	return ret_op
 
     def getPartitionKey(self, to_origin=True):
@@ -1176,20 +1188,35 @@ class JoinNode(Node):
 	
 	ret_exp_list = []
 	tmp_list = []
+	left_list = []
+	right_list = []
 	
 	if self.is_explicit:
 	    self.join_condition.on_condition_exp.getPara(tmp_list)
 	else:
+	    print "join_exp:", self.join_condition.where_condition_exp.evaluate()
 	    self.join_condition.where_condition_exp.getPara(tmp_list)
 	# print tmp_list
-	print "tmp_list:", tmp_list[0].table_name, tmp_list[1].table_name
+	print "tmp_list:"
+	util.printExpList(tmp_list)
 	if to_origin is False:
-	    return tmp_list
+	    for tmp in tmp_list:
+		if tmp.table_name == "LEFT":
+		    left_list.append(tmp)
+		else:
+		    right_list.append(tmp)
+	    return [left_list, right_list]
+
 	for i in range(0, len(tmp_list)):
 	    new_exp = self.__getOriginalExp__(tmp_list[i], True)
-	    if new_exp is not None and new_exp not in ret_exp_list:
-		ret_exp_list.append(new_exp)
-	
+	    if new_exp is not None:
+		if tmp_list[i].table_name == "LEFT":
+		    left_list.append(new_exp)
+		else:
+		    right_list.append(new_exp)
+	ret_exp_list.append(left_list)
+	ret_exp_list.append(right_list)
+	print "ret_exp_list"
 	return ret_exp_list
 
     '''def getPartitionKey(self):
@@ -1223,11 +1250,12 @@ class JoinNode(Node):
 	return ret_exp_list'''
 
     def __getOriginalExp__(self, exp, flag):
+	print "111111111111111"
 	if not isinstance(exp, expression.Column):
 	    return exp
 	index = exp.column_name
         table_name = exp.table_name
-	print "__genOriginalExp__:", table_name, index
+	print "__genOriginalExp__:", exp.evaluate(), table_name, index
         if table_name == "LEFT":
 	    if flag and isinstance(self.left_child, SPNode) and isinstance(self.left_child.child, TableNode):
 		tmp_exp = copy.deepcopy(exp)
@@ -1246,7 +1274,7 @@ class JoinNode(Node):
 		index = exp.column_name
 		tmp_exp = self.right_child.select_list.exp_list[index]
 		new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
-
+	print "new_exp", new_exp.evaluate()
         return new_exp
 
     def __print__(self):
@@ -1442,8 +1470,8 @@ class RootSelectNode(Node):
 	    
 	    node.child.is_explicit = True
 	    node.child.join_info = []
-	    node.child.join_info.append(input["jc_on_condition"])
-	    node.child.join_info.append(input["jc_jointype_list"])
+	    node.child.join_info.append(input["on_condition"])
+	    node.child.join_info.append(input["join_type"])
 	
 	    '''node.table_list = node.child.table_list
 	    node.table_alias_dic = node.child.table_alias_dic'''
@@ -1605,9 +1633,12 @@ class RootSelectNode(Node):
 	    tmp_list = []
 	    for t in item:
 		tmp_list.append(t)
-		if t.conntent == "JOIN":
+		
+		if isinstance(t, RootSelectNode):
+		    continue
+		if t.content == "JOIN":
 		    input_list = tmp_list[:-3]
-		    join_type = input_list[-1].content
+		    join_type = tmp_list[-3].content
 		    if not flag:
 			final_item = self.convertFromList(tmp_list)
 			item_dic["content"].append(final_item)
@@ -1616,12 +1647,14 @@ class RootSelectNode(Node):
 			item_dic["on_condition"].append(parser)
 			flag = False
 		    item_dic["join_type"].append(join_type)
+		    tmp_list = []
+		    continue
 		elif t.content == "ON":
 		    input_list = tmp_list[:-1]
 		    final_item = self.convertFromList(tmp_list)
 		    item_dic["content"].append(final_item)
 		    flag = True
-		tmp_list = []
+		    tmp_list = []
 	
 	    parser = ast.OnConditionParser(tmp_list)
 	    item_dic["on_condition"].append(parser)
@@ -1648,3 +1681,87 @@ def planTreeToMRQ(node):
 		child_op.parent = mrq
     return mrq
 
+'''def optimize(op):
+    minset_map = {}
+    minset = []
+    minset_num = 0
+    free_vertexes = []
+    preOptimize(op, free_vertexes, minset_map, minset, minset_num)
+    mergeMinset(op, minset_map, minset, minset_num)
+    mergeFreeVertex(free_vertexex)
+    
+def mergeMinset(op, minset_map, minset, minset_num):
+    if len(op.child_list) == 0:
+	root_mrq = op.findRoot()
+        root_mrq.__printAll__()
+	return
+    for child in op.child_list:
+	mergeMinset(child, minset_map, minset, minset_num)
+	if child.is_free_vertex or minset_map[op] != minset_map[child]:
+	    continue
+	new_op = None
+        st_type = strategy.get_st(child, op)
+        op1_child, op2_child = [], []
+        new_op = Op.merge(child, self, i, op1_child, op2_child)
+        mergeMinset(new_op, minset_map, minset, minset_num)
+
+def mergeFreeVertex(free_vertexes):
+    for fv in free_vertexes:
+	p = getPrevNoneSPOp(fv)
+	q = getPostNoneSPOp(fv)
+	if fv.criticalFun() and fv.alpha * fv.beta <= 1:
+	    Op.merge(p, fv, 4, [], [])
+	    #fv to p.reduce_phase
+	else if fv.criticalFun() and fv.alpha * fv.beta > 1:
+	    Op.merge(fv, q, 3, [], [])
+	    #fv to q.reduce_phase
+	else if fv.criticalFun() is False and fv.alpha * fv.beta <= 1:
+	    if isinstance(p, Op.Spj):
+		new_op1 = Op.merge(p, fv, 1, [], [])
+	    else:
+		new_op2 = Op.merge(p, fv, 2, [], [])
+	    #fv to p(3, 4)
+	else:
+	    new_op1 = Op.merge(p, fv, 4, [], [])
+	    new_op2 = Op.merge(fv, q, 3, [], [])
+	    # compare cost
+	    #fv to (p,q)(3,4)
+
+def preOptimize(op, free_vertexes, minset_map, minset, minset_num):
+    node = op.node_list[0]
+    if isinstance(node, SPNode) or isinstance(node, TableNode):
+	return
+    if node.parent is None:
+	minset_map[op] = 0
+	minset[0].append(op)
+    prev = getPrevNoneSPOp(op)
+    if op.pk_compare(op.pk_list, op.pk_list):
+	if isinstance(node.parent, SPNode):
+	    minset_map[op.parent] = minset_map[prev][0]
+	    minset[minset_map[op.parent]].append(op.parent)
+	minset_map[op] = minset_map[prev]
+	minset[minset_map[prev]].append(op)
+    else:
+	if isinstance(node.parent, SPNode):
+	    op.parent.is_free_vertex = True
+	    free_vertexes.append(op.parent)
+	minset_num = minset_num + 1
+	minset_map[op] = minset_num
+	minset[minset_num].append(op)
+    for child in op.child_list:
+	preOptimize(child, minset_map, minset, minset_num)
+
+def getPrevNoneSPOp(op):
+    if op.parent is None:
+	return None
+    if isinstance(op.parent.node_list[0], SPNode) is False:
+	return op.parent
+    return getPrevNoneSPNode(op.parent)
+
+def getPostNoneSPOp(op):
+    if len(op.child_list) > 1:
+	return None
+    if isinstance(op.child_list[0].node_list[0], SPNode) is False:
+	return getPostNoneSPOp(op.child_list[0]
+    return getPostNoneSPNode(op.child_list[0])
+'''
