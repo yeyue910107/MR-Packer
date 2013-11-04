@@ -25,7 +25,7 @@ import os
 
 if __name__ == "__main__":
     pwd = os.getcwd()
-    _file = open("../test/21.xml", "r")
+    _file = open("../test/17.xml", "r")
     schema = "../test/tpch.schema"
     pt = ast.astToQueryPlan(schema, _file)
     _file.close()
