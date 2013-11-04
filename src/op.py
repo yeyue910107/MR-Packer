@@ -194,6 +194,7 @@ class Op(object):
 	return self.__isPhaseBottom__(_node.child, phase)
 
     def __getIOCorrelation__(self):
+	print "map_phase", self.map_phase
 	print "reduce_phase", self.reduce_phase
 	for _node in self.reduce_phase:
 	    if self.__isPhaseBottom__(_node, self.reduce_phase):
@@ -225,6 +226,7 @@ class Op(object):
     def criticalFun(self):
 	# if fun(alpha, beta) > 0, return True
 	return True
+	#return False
 
     def reset(self):
 	self.ic_list = []
@@ -242,7 +244,10 @@ class Op(object):
 	print "oc_list:----------", self.oc_list
 	self.getOutputNode()
 	print "output_node:------", self.output_node
-	
+	for x in self.node_list:
+	    if isinstance(x, node.SPNode) and isinstance(x.child, node.TableNode):
+		self.__addMapOutput__(x, x.child.table_list[0])
+		self.__addPKDic__(x)
 	for x in self.map_phase:
 	    if self.__isPhaseBottom__(x, self.map_phase) is False:
 		continue
@@ -254,12 +259,13 @@ class Op(object):
 		    self.__addMapOutput__(x.right_child, x.right_child.child.table_list[0])
 	    if isinstance(x, node.GroupbyNode):
 		if isinstance(x.child, node.SPNode) and isinstance(x.child.child, node.TableNode):
-		    self.__addMapOutput__(x.child, x.child.child.table_list[0])'''
+		    self.__addMapOutput__(x.child, x.child.child.table_list[0])
 	    if isinstance(x, node.SPNode) and isinstance(x.child, node.TableNode):
-		self.__addMapOutput__(x, x.child.table_list[0])
+		self.__addMapOutput__(x, x.child.table_list[0])'''
 
 	    if isinstance(x, node.SPNode) and x.child not in self.node_list:
 		self.__addMapFilter__(x, x.table_list[0])
+	    
 	    if isinstance(x, node.GroupbyNode) or isinstance(x, node.OrderbyNode) and x.child not in self.node_list:
 		for tn in x.table_list:
 		    self.__addMapFilter__(x, tn)
@@ -347,16 +353,17 @@ class Op(object):
 	    print "FINDROOT_BEGIN"
 	    count = count + 1
 	    root_mrq = self.findRoot()
-	    root_mrq.__printAll__()
+	    #root_mrq.__printAll__()
 	    root_mrq.postProcess()
-	    if root_mrq.id == [1] and root_mrq.child_list[0].id == [2, 3, 4, 5, 6, 7, 8, 9]:
-	        codegen.genCode(root_mrq, "testquery")
+	    #if root_mrq.id == [1] and root_mrq.child_list[0].id == [2, 3, 4, 5, 6, 7, 8, 9]:
+	    #    root_mrq.__printAll__()
+	    #	codegen.genCode(root_mrq, "testquery")
 	    #if count == int(stop):
 		#codegen.genCode(root_mrq, "testquery")
 	    #if root_mrq.getMRQCost() < cost:
 	    #	mrq = copyMRQ(root_mrq)
-	        print "END"
-	        exit(29)
+	    #    print "END"
+	    #    exit(29)
 	    print "FINDROOT_END"
 	    return
 	for child in self.child_list:
@@ -501,6 +508,18 @@ class Op(object):
         if isinstance(self.child_list[0].node_list[0], node.SPNode) is False:
             return self.child_list[0].getPostNoneSPOp()
         return self.child_list[0].getPostNoneSPOp()
+
+    def getReducePhasePostNode(self, _node, root, res=[]):
+	if _node is None or _node not in self.node_list:
+	    return
+        if _node != root and _node in self.reduce_phase:
+	    res.append(_node)
+	    return
+	if isinstance(_node, node.JoinNode):
+	    self.getReducePhasePostNode(_node.left_child, root, res)
+	    self.getReducePhasePostNode(_node.right_child, root, res)
+	else:
+	    self.getReducePhasePostNode(_node.child, root, res)
 
     def __print__(self):
 	print self, self.id
