@@ -46,6 +46,9 @@ class Function(Expression):
 	self.para_list = para_list
 	self.setFuncObj(self)
     
+    def getExpType(self):
+	return "FUNC"
+
     def evaluate(self):
 	ret = ""
 	for para in self.para_list:
@@ -74,6 +77,19 @@ class Function(Expression):
 	    else:
 		new_list.append(old)
 	self.setParaList(new_list)
+
+    def compare(self, exp):
+        if self.getExpType() != exp.getExpType():
+            return False
+        if self.func_name != exp.func_name:
+            return False
+        if len(self.para_list) != len(exp.para_list):
+            return False
+        for i in range(0, len(self.para_list)):
+            if self.para_list[i].compare(exp.para_list[i]) is False:
+                return False
+
+        return True
 
     def genTableName(self, node):
 	col_list = []
@@ -314,6 +330,9 @@ class Column(Expression):
 	self.table_name = table_name
 	self.column_name = column_name
 
+    def getExpType(self):
+	return "COL"
+
     def evaluate(self):
 	if self.table_name == "":
 	    return "UNKNOWN." + str(self.column_name)
@@ -427,6 +446,9 @@ class Constant(Expression):
     def __init__(self, const_value, const_type):
 	self.const_type = const_type
 	self.const_value = const_value
+
+    def getExpType(self):
+	return "CONST"
 
     def evaluate(self):
 	return str(self.const_value)
