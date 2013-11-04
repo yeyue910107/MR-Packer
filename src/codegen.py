@@ -57,7 +57,7 @@ def genParaCode(para, buf_dic, flag=False, groupby_exp_list=None, hash_key=None)
         ret_str += __genParaCode__(para.column_type, para.column_name, buf_dic[para.table_name])
     elif isinstance(para, expression.Function):
         if flag:
-            ret_str += genGroupbyExpCode(para, buf_dic, True, groupby_exp_list, hash_key)
+            ret_str += genGroupbyExpCode(para, buf_dic, groupby_exp_list, hash_key)
         else:
             ret_str += genSelectFunctionCode(para, buf_dic)
     else:
@@ -66,7 +66,7 @@ def genParaCode(para, buf_dic, flag=False, groupby_exp_list=None, hash_key=None)
 
 def genGroupbyExpCode(exp, buf_dic, groupby_exp_list, hash_key):
     ret_str = ""
-    if not instance(exp, expression.Function):
+    if not isinstance(exp, expression.Function):
         # TODO ERROR
         return
     if exp.func_name in agg_func_list:
@@ -82,6 +82,15 @@ def genGroupbyExpCode(exp, buf_dic, groupby_exp_list, hash_key):
         para1, para2 = exp.para_list[0], exp.para_list[1]
         ret_str += "("
         ret_str += genParaCode(para1, buf_dic, True, groupby_exp_list, hash_key)
+	if exp.func_name == "PLUS":
+            ret_str += " + "
+        elif exp.func_name == "MINUS":
+            ret_str += " - "
+        elif exp.func_name == "DIVIDE":
+            ret_str += " /  "
+        elif exp.func_name == "MULTIPLY":
+            ret_str += " * "
+
         ret_str += genParaCode(para2, buf_dic, True, groupby_exp_list, hash_key)
         ret_str += ")"
     else:
@@ -100,12 +109,15 @@ def __genParaCode__(para_type, value, buf_name):
             ret_str = buf_name + "[" + str(value) + "]"
         elif para_type == "DATE":
             ret_str = buf_name + "[" + str(value) + "]"
+	else:
+	    # TODO ERROR
+	    pass
+    else:
+        if para_type in value_type_list:
+            ret_str = str(value)
         else:
-            if para_type in value_type_list:
-                ret_str = str(value)
-            else:
-                # TODO ERROR
-                pass
+            # TODO ERROR
+            pass
     return ret_str
 
 def genValueCode(value_type, value_name, value_list):
@@ -223,8 +235,9 @@ def genMRKeyValue(exp_list, value_type, buf_dic):
             res += genSelectFunctionCode(exp, buf_dic)
         else:
             res += __genParaCode__(exp.const_type, exp.const_value, None)
-        if value_type == "TEXT":
-            res += "+ \"\" +"
+	print "value_type", value_type
+        if value_type == "Text":
+            res += "+ \"|\" +"
         else:
             res += "+"
     print "res:", res
@@ -417,23 +430,23 @@ def isSelfJoin(node):
 
 def genHeader(fo):
     #print >>fo, "package " + packagename + ";" 
-    print >>fo,"import java.io.IOException;"
-    print >>fo,"import java.util.*;"
-    print >>fo,"import java.text.*;"
-    print >>fo,"import org.apache.hadoop.fs.Path;"
-    print >>fo,"import org.apache.hadoop.conf.*;"
-    print >>fo,"import org.apache.hadoop.io.*;"
-    print >>fo,"import org.apache.hadoop.util.Tool;"
-    print >>fo,"import org.apache.hadoop.util.ToolRunner;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Job;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Mapper;"
-    print >>fo, "import org.apache.hadoop.mapreduce.Reducer;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.input.FileSplit;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;"
-    print >>fo, "import org.apache.hadoop.mapreduce.lib.partition.*;"
-    print >>fo,"\n"
+    print >> fo, "import java.io.IOException;"
+    print >> fo, "import java.util.*;"
+    print >> fo, "import java.text.*;"
+    print >> fo, "import org.apache.hadoop.fs.Path;"
+    print >> fo, "import org.apache.hadoop.conf.*;"
+    print >> fo, "import org.apache.hadoop.io.*;"
+    print >> fo, "import org.apache.hadoop.util.Tool;"
+    print >> fo, "import org.apache.hadoop.util.ToolRunner;"
+    print >> fo, "import org.apache.hadoop.mapreduce.Job;"
+    print >> fo, "import org.apache.hadoop.mapreduce.Mapper;"
+    print >> fo, "import org.apache.hadoop.mapreduce.Reducer;"
+    print >> fo, "import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;"
+    print >> fo, "import org.apache.hadoop.mapreduce.lib.input.FileSplit;"
+    print >> fo, "import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;"
+    print >> fo, "import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;"
+    print >> fo, "import org.apache.hadoop.mapreduce.lib.partition.*;"
+    print >> fo, "\n"
 
 def genOpCode(op, fo):
     #op.postProcess()
@@ -493,11 +506,11 @@ def genOpCode(op, fo):
         map_key_type = getKeyValueType(op.pk_dic[tb])
         i += 1
     map_value_type = "Text"
-    
-    print >> fo,"\tpublic static class Map extends  Mapper<Object, Text, " + map_key_type + ", " + map_value_type + ">{\n"
+    print >> fo, "public class testquery" + str(op.id[0]) + " extends Configured implements Tool {\n"
+    print >> fo, "\tpublic static class Map extends Mapper<Object, Text, " + map_key_type + ", " + map_value_type + "> {\n"
     print >> fo, "\t\tprivate String filename;"
     print >> fo, "\t\tprivate int filetag = -1;"
-    print >> fo, "\t\tpublic void setup(Context context) throws IOException, InterruptedException {\n"
+    print >> fo, "\t\tpublic void setup(Context context) throws IOException, InterruptedException {"
     print >> fo, "\t\t\tint last_index = -1, start_index = -1;"
     print >> fo, "\t\t\tString path = ((FileSplit)context.getInputSplit()).getPath().toString();"
     print >> fo, "\t\t\tlast_index = path.lastIndexOf(\'/\');"
@@ -505,19 +518,19 @@ def genOpCode(op, fo):
     print >> fo, "\t\t\tstart_index = path.lastIndexOf(\'/\', last_index);"
     print >> fo, "\t\t\tfilename = path.substring(start_index + 1, last_index + 1);"
     for table_name in tb_name_tag.keys():
-        print >> fo, "\t\t\tif (filename.compareTo(\"" + table_name + "\") == 0){"
+        print >> fo, "\t\t\tif (filename.compareTo(\"" + table_name + "\") == 0) {"
         print >> fo, "\t\t\t\tfiletag = " + str(tb_name_tag[table_name]) + ";"
         print >> fo, "\t\t\t}"
     print >> fo, "\t\t}\n"
 
-    print >> fo, "\t\tpublic void map(Object key, Text value, Context context) throws IOException, InterruptedException{\n"
+    print >> fo, "\t\tpublic void map(Object key, Text value, Context context) throws IOException, InterruptedException {"
     print >> fo, "\t\t\tString line = value.toString();"
     print >> fo, "\t\t\tString[] " + line_buf + "= line.split(\"\\\|\");"
     print >> fo, "\t\t\tBitSet dispatch = new BitSet(32);"
 
     for table_name in op.map_output.keys():
         map_key = genMRKeyValue(op.pk_dic[table_name], map_key_type, buf_dic)
-        print >> fo, "\t\t\tif (filetag == " + str(tb_name_tag[table_name]) + "){\n"
+        print >> fo, "\t\t\tif (filetag == " + str(tb_name_tag[table_name]) + ") {"
         map_value = genMRKeyValue(op.map_output[table_name], map_value_type, buf_dic)
 
         map_filter = {}
@@ -538,7 +551,7 @@ def genOpCode(op, fo):
 	        print key, map_filter[key].evaluate()
 	print "table_name:", table_name
         if table_name in map_filter.keys() and map_filter[table_name] is not None:
-            print >> fo, "\t\t\t\tif (" + genWhereExpCode(map_filter[table_name], buf_dic) + "){\n"
+            print >> fo, "\t\t\t\tif (" + genWhereExpCode(map_filter[table_name], buf_dic) + ") {"
 
             '''for map_node in op.map_phase:
                 if isinstance(map_node, node.GroupbyNode):
@@ -591,7 +604,7 @@ def genOpCode(op, fo):
             output += ");"
             print >> fo, output
 
-        print >> fo, "\t\t\t}\n"
+        print >> fo, "\t\t\t}"
 
     print >> fo, "\t\t}\n"
     print >> fo, "\t}\n"
@@ -600,11 +613,11 @@ def genOpCode(op, fo):
     reduce_value_type = "Text"
 
     print >> fo, "\tpublic static class Reduce extends Reducer<" + map_key_type + ", " + map_value_type + ", " + reduce_key_type + ", " + reduce_value_type + "> {\n"
-    print >> fo, "\t\tpublic void reduce(" + map_key_type + " key, Iterable<" + map_value_type + "> v, Context context) throws IOExceptiuon, InterruptedException {\n"
+    print >> fo, "\t\tpublic void reduce(" + map_key_type + " key, Iterable<" + map_value_type + "> v, Context context) throws IOExceptiuon, InterruptedException {"
     
     print >> fo, "\t\t\tIterator values = v.iterator();"
     print >> fo, "\t\t\tArrayList[] tmp_output = new ArrayList[" + str(len(op.reduce_phase)) + "];"
-    print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(op.reduce_phase)) + "; i++) {\n"
+    print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(op.reduce_phase)) + "; i++) {"
     print >> fo, "\t\t\t\ttmp_output[i] = new ArrayList();"
     print >> fo ,"\t\t\t}"
 
@@ -627,7 +640,7 @@ def genOpCode(op, fo):
             print >> fo, "\t\t\tDouble[] " + tmp_agg_buf + " = new Double[" + str(len(gb_exp_list)) + "];"
             print >> fo, "\t\t\tArrayList[] " + tmp_count_buf + " = new ArrayList[" + str(len(gb_exp_list)) + "];"
             print >> fo, "\t\t\tint " + tmp_line_counter + " = 0;"
-            print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(gb_exp_list)) + "; i++) {\n"
+            print >> fo, "\t\t\tfor (int i = 0; i < " + str(len(gb_exp_list)) + "; i++) {"
             print >> fo, "\t\t\t\t" + tmp_agg_buf + "[i] = 0.0;"
             print >> fo, "\t\t\t\t" + tmp_count_buf + "[i] = new ArrayList();"
             print >> fo, "\t\t\t}\n"
@@ -639,7 +652,7 @@ def genOpCode(op, fo):
             print >> fo, "\t\t\tArrayList " + tmp_right_array + " = new ArrayList();"
 
     # iterate each value
-    print >> fo, "\t\t\twhile (values.hasNext()) {\n"
+    print >> fo, "\t\t\twhile (values.hasNext()) {"
     print >> fo, "\t\t\t\tString line = values.next().toString();"
     print >> fo, "\t\t\t\tString dispatch = line.split(\"\\\|\")[1];"
     print >> fo, "\t\t\t\ttmp = line.substring(2+dispatch.length()+1);"
@@ -662,7 +675,7 @@ def genOpCode(op, fo):
 	    else:
 	        table_name = index_name[0]
             
-            print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)){\n"
+            print >> fo, "\t\t\t\tif (line.charAt(0) == '" + str(tb_name_tag[table_name]) + "' && (dispatch.length() == 0 || dispatch.indexOf('" + reduce_node_index + "') == -1)) {"
 	    print "gb_exp_list"
 	    util.printExpList(gb_exp_list)
             for exp in gb_exp_list:
@@ -694,7 +707,7 @@ def genOpCode(op, fo):
 
         elif isinstance(reduce_node, node.JoinNode):
             self_join_flag = isSelfJoin(reduce_node)
-            reduce_node_index = str(op.map_phase.index(reduce_node))
+            reduce_node_index = str(op.reduce_phase.index(reduce_node))
             tmp_left_array = left_array + "_" + reduce_node_index
             tmp_right_array = right_array + "_" + reduce_node_index
             if reduce_node.left_child in op.node_list and isinstance(reduce_node.left_child, node.SPNode) and isinstance(reduce_node.left_child.child, node.TableNode):
@@ -756,7 +769,45 @@ def genOpCode(op, fo):
                 elif agg_func == "COUNT_DISTINCT":
                     print >> fo, "\t\t\t", tmp_agg_buf + "[" + exp_index + "] = (double) " + tmp_count_buf + "[" + exp_index + "].size();"
 
-             # TODO
+	    buf_dict = {}
+            for tn in reduce_node.table_list:
+                buf_dict[tn] = line_buf
+
+            buf_dict["AGG"] = tmp_agg_buf
+
+            # TODO
+	    reduce_value = ""
+	    for i in range(0, len(reduce_node.select_list.exp_list)):
+ 		exp = reduce_node.select_list.exp_list[i]
+		if isinstance(exp, expression.Function):
+            	    tmp_list = []
+            	    getGroupbyExp(exp, tmp_list)
+		    if len(tmp_list) > 0:
+                        reduce_value += genGroupbyExpCode(exp, buf_dict, gb_exp_list, None)
+                        if reduce_value_type == "Text":
+                            reduce_value += " + \"|\""
+                        reduce_value += "+"
+                    else:
+                        reduce_value += genSelectFunctionCode(exp, buf_dict)
+                        if reduce_value_type == "Text":
+                            reduce_value += " + \"|\""
+                        reduce_value += "+"
+
+                elif isinstance(exp, expression.Column):
+                    reduce_value += __genParaCode__(exp.column_type, exp.column_name, line_buf)
+                    if reduce_value_type == "Text":
+                        reduce_value += " + \"|\""
+                    reduce_value += "+"
+                else:
+                    reduce_value += __genParaCode__(exp.const_type, exp.const_value, None)
+                    if reduce_value_type == "Text":
+                        reduce_value += " + \"|\""
+                    reduce_value += "+"
+	    reduce_value = reduce_value[:-1]
+	    if reduce_value == "":
+		reduce_value = "\" \""
+	    print >> fo, "\t\t\ttmp_ouput[" + reduce_node_index + "].add(" + reduce_value + ");"
+
         elif isinstance(reduce_node, node.JoinNode):
             tmp_left_array = left_array + "_" + reduce_node_index
             tmp_right_array = right_array + "_" + reduce_node_index
@@ -901,12 +952,17 @@ def genOpCode(op, fo):
                 print >> fo, "\t\t\t}"
 
         # TODO
+
     for reduce_node in op.reduce_phase:
         if reduce_node not in op.oc_list:
             continue
         if isinstance(reduce_node, node.GroupbyNode):
             reduce_node_index = op.reduce_phase.index(reduce_node.child)
-            tmp_gb_input = "tmp_output[" + str(reduce_node_index) + "]"
+	    post_nodes = []
+	    op.getReducePhasePostNode(reduce_node, reduce_node, post_nodes)
+	    if len(post_nodes) == 1:
+	        tmp_gb_input = "tmp_output[" + str(op.reduce_phase.index(post_nodes[0])) + "]"
+            #tmp_gb_input = "tmp_output[" + str(reduce_node_index) + "]"
             gb_exp_list = []
             getGroupbyExpList(reduce_node.select_list.exp_list, gb_exp_list)
                
@@ -1027,8 +1083,16 @@ def genOpCode(op, fo):
         
         elif isinstance(reduce_node, node.JoinNode):
             reduce_node_index = str(op.reduce_phase.index(reduce_node))
-            tmp_left_array = left_array + "_" + reduce_node_index
-            tmp_right_array = right_array + "_" + reduce_node_index
+            #tmp_left_array = left_array + "_" + reduce_node_index
+	    #tmp_right_array = right_array + "_" + reduce_node_index
+	    post_nodes = []
+	    op.getReducePhasePostNode(reduce_node, reduce_node, post_nodes)
+	    if len(post_nodes) == 2:
+	        tmp_left_array = "tmp_output[" + str(op.reduce_phase.index(post_nodes[0])) + "]"
+	        tmp_right_array = "tmp_output[" + str(op.reduce_phase.index(post_nodes[1])) + "]"
+	    else:            
+		tmp_left_array = left_array + "_" + reduce_node_index
+		tmp_right_array = right_array + "_" + reduce_node_index
             buf_dic = {}
             tmp_left_buf = "left_buf_" + reduce_node_index
             tmp_right_buf = "right_buf_" + reduce_node_index
@@ -1179,7 +1243,7 @@ def genOpCode(op, fo):
     genMainCode(op, fo, types, True)
 
 def genMainCode(op, fo, types, has_reduce):
-    print >> fo, "\tpublic int run(String[] args) throws Exception {\n"
+    print >> fo, "\tpublic int run(String[] args) throws Exception {"
     job_name = fo.name.split(".java")[0]
 
     print >> fo, "\t\tConfiguration conf = new Configuration();"
@@ -1189,7 +1253,7 @@ def genMainCode(op, fo, types, has_reduce):
     print >> fo, "\t\tjob.setMapOutputValueClass(" + types["map_value_type"] + ".class);"
     print >> fo, "\t\tjob.setOutputKeyClass(" + types["reduce_key_type"] + ".class);"
     print >> fo, "\t\tjob.setOutputValueClass(" + types["reduce_value_type"] + ".class);"
-    print >> fo, "setMapperClass(Map.class);"
+    print >> fo, "\t\tjob.setMapperClass(Map.class);"
     if has_reduce:
         print >> fo, "\t\tjob.setReduceClass(Reduce.class);"
     input_num = len(op.map_output.keys())
@@ -1199,10 +1263,11 @@ def genMainCode(op, fo, types, has_reduce):
     print >> fo, "\t\treturn (job.waitForCompletion) ? 0 : 1);"
     print >> fo, "\t}\n"
 
-    print >> fo, "\tpublic static void main(String[] args) throws Exception {\n"
+    print >> fo, "\tpublic static void main(String[] args) throws Exception {"
     print >> fo, "\t\tint res = ToolRunner.run(new Configuration(), new " + job_name + "(), args);"
     print >> fo, "\t\tSystem.exit(res);"
     print >> fo, "\t}\n"
+    print >> fo, "}\n"
 
 def genCode(op, filename):
     op_name = filename + str(op.id[0]) + ".java"
