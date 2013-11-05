@@ -495,7 +495,10 @@ def nodeToAST(node):
 		
 	for child in node.childNodes:
 	    if child.nodeName == "content":
-		content = child.childNodes[0].nodeValue.upper()
+		if token_type == "69":
+		    content = child.childNodes[0].nodeValue
+		else:
+		    content = child.childNodes[0].nodeValue.upper()
 	ast = ASTreeNode(line_num, position_in_line, token_name, child_num, token_type, content)
 	for child in node.childNodes:
 	    if child.nodeName != "content":
