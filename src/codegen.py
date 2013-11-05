@@ -429,7 +429,7 @@ def isSelfJoin(node):
     return False
 
 def genHeader(fo):
-    #print >>fo, "package " + packagename + ";" 
+    print >> fo, "package test;" 
     print >> fo, "import java.io.IOException;"
     print >> fo, "import java.util.*;"
     print >> fo, "import java.text.*;"
@@ -444,7 +444,7 @@ def genHeader(fo):
     print >> fo, "import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;"
     print >> fo, "import org.apache.hadoop.mapreduce.lib.input.FileSplit;"
     print >> fo, "import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;"
-    print >> fo, "import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;"
+    #print >> fo, "import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;"
     print >> fo, "import org.apache.hadoop.mapreduce.lib.partition.*;"
     print >> fo, "\n"
 
@@ -511,12 +511,14 @@ def genOpCode(op, fo):
     print >> fo, "\t\tprivate String filename;"
     print >> fo, "\t\tprivate int filetag = -1;"
     print >> fo, "\t\tpublic void setup(Context context) throws IOException, InterruptedException {"
-    print >> fo, "\t\t\tint last_index = -1, start_index = -1;"
+    #print >> fo, "\t\t\tint last_index = -1, start_index = -1;"
+    print >> fo, "\t\t\tint last_index = -1;"
     print >> fo, "\t\t\tString path = ((FileSplit)context.getInputSplit()).getPath().toString();"
     print >> fo, "\t\t\tlast_index = path.lastIndexOf(\'/\');"
-    print >> fo, "\t\t\tlast_index = last_index - 1;"
-    print >> fo, "\t\t\tstart_index = path.lastIndexOf(\'/\', last_index);"
-    print >> fo, "\t\t\tfilename = path.substring(start_index + 1, last_index + 1);"
+    #print >> fo, "\t\t\tlast_index = last_index - 1;"
+    #print >> fo, "\t\t\tstart_index = path.lastIndexOf(\'/\', last_index);"
+    #print >> fo, "\t\t\tfilename = path.substring(start_index + 1, last_index + 1);"
+    print >> fo, "\t\t\tfilename = path.substring(last_index + 1);"
     for table_name in tb_name_tag.keys():
         print >> fo, "\t\t\tif (filename.compareTo(\"" + table_name + "\") == 0) {"
         print >> fo, "\t\t\t\tfiletag = " + str(tb_name_tag[table_name]) + ";"
@@ -553,31 +555,32 @@ def genOpCode(op, fo):
         if table_name in map_filter.keys() and map_filter[table_name] is not None:
             print >> fo, "\t\t\t\tif (" + genWhereExpCode(map_filter[table_name], buf_dic) + ") {"
 
-            '''for map_node in op.map_phase:
+            for map_node in op.map_phase:
                 if isinstance(map_node, node.GroupbyNode):
                     # TODO
                     if table_name in map_node.table_list and map_node.child.where_condition is not None:
                         where_exp = map_node.child.where_condition.where_condition_exp
                         print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
-                        print >> fo, "\t\t\t\t\t\tdispatch.set(", op.map_phase.index(map_node),");"
+                        print >> fo, "\t\t\t\t\t\tdispatch.set(", str(op.map_phase.index(map_node)),");"
                 elif isinstance(map_node, node.JoinNode):
                     self_join_flag = isSelfJoin(map_node)
-                    if isinstance(map_node.left_child, node.SPNode):
-                        if table_name == map_node.left_child.table_name and map_node.left_child.where_condition is not None:
-                            where_exp = map_node.left_child.where_condition.where_condition_exp
+		    [lchild, rchild] = [map_node.left_child, map_node.right_child]
+                    if isinstance(lchild, node.SPNode) and isinstance(lchild.child, node.TableNode):
+                        if table_name == lchild.child.table_name and lchild.where_condition is not None:
+                            where_exp = lchild.where_condition.where_condition_exp
                             print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
                             if self_join_flag is False:
-                                print >> fo, "\t\t\t\t\t\tdispatch.set(" + op.map_phase.index(map_node) + ");"
+                                print >> fo, "\t\t\t\t\t\tdispatch.set(" + str(op.map_phase.index(map_node)) + ");"
                             else:
-                                print >> fo, "\t\t\t\t\t\tdispatch.set(", 16+op.map_phase.index(map_node), ");"
-                    if isinstance(map_node.right_child, node.SPNode):
-                        if table_name == map_node.right_child.table_name and map_node.right_child.where_condition is not None:
-                            where_exp = map_node.right_child.where_condition.where_condition_exp
+                                print >> fo, "\t\t\t\t\t\tdispatch.set(", str(16+op.map_phase.index(map_node)), ");"
+                    if isinstance(rchild, node.SPNode) and isinstance(rchild.child, node.TableNode):
+                        if table_name == rchild.child.table_name and rchild.where_condition is not None:
+                            where_exp = rchild.where_condition.where_condition_exp
                             print >> fo, "\t\t\t\t\tif (!(" + genWhereExpCode(where_exp, buf_dic) + "))"
                             if self_join_flag is False:
-                                print >> fo, "\t\t\t\t\t\tdispatch.set(" + op.map_phase.index(map_node) + ");"
+                                print >> fo, "\t\t\t\t\t\tdispatch.set(" + str(op.map_phase.index(map_node)) + ");"
                             else:
-                                print >> fo, "\t\t\t\t\t\tdispatch.set(", 16+op.map_phase.index(map_node), ");"
+                                print >> fo, "\t\t\t\t\t\tdispatch.set(", str(17+op.map_phase.index(map_node)), ");"
 
             print >> fo, "\t\t\t\t\tif (dispatch.isEmpty())"
             output = "\t\t\t\t\t\tcontext.write("
@@ -587,7 +590,7 @@ def genOpCode(op, fo):
             output += ");"
             print >> fo, output
 
-            print >> fo, "\t\t\t\t\telse"'''
+            print >> fo, "\t\t\t\t\telse"
             output = "\t\t\t\t\t\tcontext.write("
             output += "new " + map_key_type + "(" + map_key + ")"
             output += ", "
@@ -613,7 +616,7 @@ def genOpCode(op, fo):
     reduce_value_type = "Text"
 
     print >> fo, "\tpublic static class Reduce extends Reducer<" + map_key_type + ", " + map_value_type + ", " + reduce_key_type + ", " + reduce_value_type + "> {\n"
-    print >> fo, "\t\tpublic void reduce(" + map_key_type + " key, Iterable<" + map_value_type + "> v, Context context) throws IOExceptiuon, InterruptedException {"
+    print >> fo, "\t\tpublic void reduce(" + map_key_type + " key, Iterable<" + map_value_type + "> v, Context context) throws IOException, InterruptedException {"
     
     print >> fo, "\t\t\tIterator values = v.iterator();"
     print >> fo, "\t\t\tArrayList[] tmp_output = new ArrayList[" + str(len(op.reduce_phase)) + "];"
@@ -806,7 +809,7 @@ def genOpCode(op, fo):
 	    reduce_value = reduce_value[:-1]
 	    if reduce_value == "":
 		reduce_value = "\" \""
-	    print >> fo, "\t\t\ttmp_ouput[" + reduce_node_index + "].add(" + reduce_value + ");"
+	    print >> fo, "\t\t\ttmp_output[" + reduce_node_index + "].add(" + reduce_value + ");"
 
         elif isinstance(reduce_node, node.JoinNode):
             tmp_left_array = left_array + "_" + reduce_node_index
@@ -1255,12 +1258,12 @@ def genMainCode(op, fo, types, has_reduce):
     print >> fo, "\t\tjob.setOutputValueClass(" + types["reduce_value_type"] + ".class);"
     print >> fo, "\t\tjob.setMapperClass(Map.class);"
     if has_reduce:
-        print >> fo, "\t\tjob.setReduceClass(Reduce.class);"
+        print >> fo, "\t\tjob.setReducerClass(Reduce.class);"
     input_num = len(op.map_output.keys())
     for i in range(0, input_num):
-        print >> fo, "\t\tFileOutputFormat.addInputPath(job, new Path(args[" + str(i) + "]));"
-    print >> fo, "\t\tFileOutput.setOutputPath(job, new Path(args[" + str(input_num) + "]));"
-    print >> fo, "\t\treturn (job.waitForCompletion) ? 0 : 1);"
+        print >> fo, "\t\tFileInputFormat.addInputPath(job, new Path(args[" + str(i) + "]));"
+    print >> fo, "\t\tFileOutputFormat.setOutputPath(job, new Path(args[" + str(input_num) + "]));"
+    print >> fo, "\t\treturn (job.waitForCompletion(true) ? 0 : 1);"
     print >> fo, "\t}\n"
 
     print >> fo, "\tpublic static void main(String[] args) throws Exception {"
