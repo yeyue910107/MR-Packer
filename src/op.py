@@ -33,6 +33,7 @@ class Op(object):
     reduce_phase = None
     node_list = None
     child_list = None
+    table_list = None
     parent = None
     ic_list = None	# input correlation nodes list
     oc_list = None	# output correlation nodes list
@@ -54,6 +55,7 @@ class Op(object):
 	self.reduce_phase = []
 	self.node_list = []
 	self.child_list = []
+	self.table_list = []
 	self.parent = None
 	self.pk_dic = {}
 	self.ic_list = []
@@ -61,6 +63,11 @@ class Op(object):
 	self.map_output = {}
 	self.map_filter = {}
 	self.output_node = None
+    
+    def getID(self):
+	if len(self.id) > 0:
+ 	    return str(self.id[0])
+	return None
 
     def isSp(self):
 	if isinstance(self, SpjOp) and self.is_sp:
@@ -212,6 +219,13 @@ class Op(object):
 	for child in self.child_list:
 	    child.getNodeList()
 
+    def getTableList(self):
+	for x in self.node_list:
+	    if isinstance(x, node.SPNode) and isinstance(x.child, node.TableNode):
+		for table in x.child.table_list:
+		    if table not in self.table_list:
+			self.table_list.append(table)
+
     def getOutputNode(self):
 	if len(self.reduce_phase) > 0:
 	    for _node in self.reduce_phase:
@@ -239,6 +253,7 @@ class Op(object):
     def postProcess(self):
 	self.reset()
 	self.getNodeList()
+	self.getTableList()
 	self.__getIOCorrelation__()
 	print "ic_list:----------", self.ic_list
 	print "oc_list:----------", self.oc_list
