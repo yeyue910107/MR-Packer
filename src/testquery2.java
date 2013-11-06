@@ -23,10 +23,11 @@ public class testquery2 extends Configured implements Tool {
 		private String filename;
 		private int filetag = -1;
 		public void setup(Context context) throws IOException, InterruptedException {
-			int last_index = -1;
+			int last_index = -1, start_index = -1;
 			String path = ((FileSplit)context.getInputSplit()).getPath().toString();
 			last_index = path.lastIndexOf('/');
-			filename = path.substring(last_index + 1);
+			start_index = path.lastIndexOf('/', last_index - 1);
+			filename = path.substring(start_index + 1, last_index);
 			if (filename.compareTo("LINEITEM") == 0) {
 				filetag = 2;
 			}
