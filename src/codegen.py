@@ -1218,6 +1218,7 @@ def genOpCode(op, fo):
                 print >> fo, "\t\t\t\tfor (int j = 0; j < " + tmp_right_array + ".size(); j++) {"
                 print >> fo, "\t\t\t\t\tString[] " + tmp_right_buf + " = ((String) " + tmp_right_array + ".get(j)).split(\"\\\|\");"
                 reduce_value = genMRKeyValue(reduce_node.select_list.exp_list, reduce_value_type, buf_dic)
+		print "xxxxxx", reduce_value
                 if reduce_node.where_condition is not None:
                     exp = reduce_node.where_condition.where_condition_exp
                     print >> fo, "\t\t\t\t\tif (" + genWhereExpCode(exp, buf_dic) + ") {"
