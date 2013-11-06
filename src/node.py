@@ -681,10 +681,13 @@ class GroupbyNode(Node):
 
     @staticmethod	
     def __genColumnIndex__(col, exp_list, select_dic):
+	i = 0
 	for exp in exp_list:
-	    if (isinstance(exp, expression.Column) and col.compare(exp)) or col.column_name == select_dic[exp]:
-		col.column_name = exp_list.index(exp)
-		break
+	    if isinstance(exp, expression.Column):
+		if col.compare(exp) or col.column_name == select_dic[exp]:
+		    col.column_name = i
+		    break
+		i += 1
 
     def getMapOutput(self, table_name):
 	'''if self.child is not None and self.child.select_list is not None:
