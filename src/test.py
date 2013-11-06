@@ -50,5 +50,7 @@ if __name__ == "__main__":
     os.chdir(pwd)
     #mrq.postProcess()
     #mrq.getLowCostMRQ(sys.argv[1])'''
-    codegen.genCode(mrq, "testquery")
+    filename = "testquery"
+    #codegen.genCode(mrq, filename)
+    codegen.run(mrq, filename)
     #_file.close()
