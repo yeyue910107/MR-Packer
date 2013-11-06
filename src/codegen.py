@@ -16,7 +16,7 @@
 """
 import sys
 import commands
-#import path from os
+import os
 import expression
 import copy
 import node
@@ -1270,7 +1270,13 @@ def genMainCode(op, fo, types, has_reduce):
     print >> fo, "\t}\n"
     print >> fo, "}\n"
 
-def genCode(op, filename):
+def genOpList(op, op_list):
+    if len(op.child_list) > 0:
+	for child in op.child_list:
+	    genOpList(child, op_list)
+    op_list.append(op)
+
+'''def genCode(op, filename):
     op_name = filename + str(op.id[0]) + ".java"
     fo = open(op_name,"w")
     genHeader(fo)
@@ -1279,22 +1285,77 @@ def genCode(op, filename):
     if len(op.child_list) > 0:
         for child in op.child_list:
             genCode(child, filename)
+    fo.close()'''
+
+def genCode(op, filename):
+    op_list = []
+    genOpList(op, op_list)
+    for _op in op_list:
+	__genCode__(_op, filename)
+    return op_list
+
+def setup(op_list, filename):
+    codedir = "./"
+    package = "test"
+    jardir = "../"
+    for op in op_list:
+	op_id = op.getID()
+	compileCode(codedir, filename + op_id)
+	genJar(jardir, package, filename + op_id)
+
+def excute(op_list, filename):
+    datadir = "/test/mrpacker/"
+    jardir = "./"
+    for op in op_list:
+	input_path = []
+	if len(op.table_list) > 0:
+	    for table in op.table_list:
+		input_path.append(datadir + table + "/")
+	elif len(op.child_list) > 0:
+	    for child in op.child_list:
+		input_path.append(datadir + filename + child.getID() + "/")
+	output_path = datadir + filename + op.getID() + "/"
+	executeJar(jardir, filename + op.getID(), input_path, output_path)
+
+def run(op, filename):
+    op_list = genCode(op, filename)
+    for op in op_list:
+	print op.getID()
+    setup(op_list, filename)
+    excute(op_list, filename)
+
+def __genCode__(op, filename):
+    op_name = filename + op.getID() + ".java"
+    fo = open(op_name,"w")
+    genHeader(fo)
+    genOpCode(op, fo)
     fo.close()
 
-'''def compileCode(codedir):
-    version = "1.0.1"
-    if "HADOOP_HOME" in os.environ:
-        version = commands.getoutput("$HADOOP_HOME/bin/hadoop version").split("\n")[0].split(" ")[1]
+def compileCode(codedir, filename):
+    os.system("mkdir " + filename)
+    print "mkdir " + filename
+    #version = "1.0.0"
+    #if "HADOOP_HOME" in os.environ:
+    #    version = commands.getoutput("$HADOOP_HOME/bin/hadoop version").split("\n")[0].split(" ")[1]
 
-    cmd = "javac -classpath $HADOOP_HOME/hadoop-common-" + version + ".jar:$HADOOP_HOME/hadoop-hdfs-" + version + ".jar:$HADOOP_HOME/hadoop-mapred-" + version + ".jar " 
-    cmd += codedir + "/*.java -d ."
-    print >> cmd
-    #if config.compile_jar is True:
+    cmd = "javac -classpath $HADOOP_HOME/hadoop-core-*.jar "
+    cmd += codedir + filename + ".java -d " + codedir + filename
+    print cmd
     os.system(cmd)
 
-def genJar(jardir, filename):
-    cmd = "jar -cf " +jardir + "/"+ filename + ".jar"
-    print >> cmd
-    #if config.compile_jar is True:
+def genJar(jardir, package, filename):
+    os.chdir(filename)
+    cmd = "jar -cef " + package + "." + filename + " " + jardir + filename + ".jar " + package
+    print cmd
     os.system(cmd)
-'''
+    os.chdir("..")
+    os.system("rm -r " + filename)
+
+def executeJar(jardir, filename, input_path, output_path):
+    cmd = "hadoop jar " + jardir + filename + ".jar"
+    for path in input_path:
+	cmd += " " + path
+    cmd += " " + output_path
+    print cmd
+    os.system(cmd)
+
