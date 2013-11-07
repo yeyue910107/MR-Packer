@@ -32,25 +32,13 @@ if __name__ == "__main__":
     mrq = node.planTreeToMRQ(pt)
     mrq.optimize()
     mrq.postProcess()
-
-    '''codedir = "./code"
-    jardir = "./jar"
-    if os.path.exists(codedir) or os.path.exists(jardir):
-        pass
-    else:
-        os.makedirs(codedir)
-        os.makedirs(jardir)
-    os.chdir(codedir)
-    codegen.genCode(mrq, "testquery")
-    os.chdir(pwd)
-    os.chdir(jardir)
-    fo = open(config.scriptname,'w')
-    compile_class(codedir,fo)
-    generate_jar(jardir, )
-    os.chdir(pwd)
-    #mrq.postProcess()
-    #mrq.getLowCostMRQ(sys.argv[1])'''
+    '''_run = False
+    if len(sys.argv) == 3 and sys.argv[2] == "r":
+	_run = True
+    mrq.getLowCostMRQ(sys.argv[1], _run)'''
     filename = "testquery"
-    #codegen.genCode(mrq, filename)
+    #op_list = codegen.genCode(mrq, filename)
+    #id_list = [op.getID() for op in op_list]
+    #print id_list
     codegen.run(mrq, filename)
     #_file.close()
