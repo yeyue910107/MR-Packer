@@ -46,8 +46,8 @@ class Op(object):
     output_node = None
     is_composite = False
     is_free_vertex = False
-    alpha = 1.0
-    beta = 1.0
+    alpha = 1
+    beta = 1
 
     def __init__(self):
 	self.id = []
@@ -361,34 +361,46 @@ class Op(object):
 	    all_cost += child.getMRQCost()
 	return all_cost
 
-    def getLowCostMRQ(self, stop):
+    def getLowCostMRQ(self, stop, _run=True):
 	global count
 	if len(self.child_list) == 0:
 	#if len(self.child_list) == 0 and self.isBottom():
 	    print "FINDROOT_BEGIN"
 	    count = count + 1
-	    root_mrq = self.findRoot()
+	    #root_mrq = self.findRoot()
 	    #root_mrq.__printAll__()
-	    root_mrq.postProcess()
+	    #root_mrq.postProcess()
 	    #if root_mrq.id == [1] and root_mrq.child_list[0].id == [2, 3, 4, 5, 6, 7, 8, 9]:
 	    #    root_mrq.__printAll__()
 	    #	codegen.genCode(root_mrq, "testquery")
-	    #if count == int(stop):
-		#codegen.genCode(root_mrq, "testquery")
+	    if count >= int(stop):
+		root_mrq = self.findRoot()
+		root_mrq.postProcess()
+		root_mrq.__printAll__()
+		#op_list = codegen.genCode(root_mrq, "testquery")
+		#op_id = [op.getID() for op in op_list]
+		#print op_id
+		codegen.run(root_mrq, "testquery", _run)
+		exit(29)
+		#return
 	    #if root_mrq.getMRQCost() < cost:
 	    #	mrq = copyMRQ(root_mrq)
 	    #    print "END"
 	    #    exit(29)
 	    print "FINDROOT_END"
 	    return
+	if count >= int(stop):
+	    return
 	for child in self.child_list:
-	    child.getLowCostMRQ(stop)
+	    child.getLowCostMRQ(stop, _run)
+	    if count >= int(stop):
+		return
 	    new_op = None
 	    for i in range(1, 5):
 		op1_child, op2_child = [], []
 	        new_op = Op.merge(child, self, i, op1_child, op2_child)
 		if new_op is not None:
-		    new_op.getLowCostMRQ(stop)
+		    new_op.getLowCostMRQ(stop, _run)
 		    Op.detach(new_op, child, self, op1_child, op2_child)
 
     def optimize(self):
