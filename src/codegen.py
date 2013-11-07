@@ -477,17 +477,30 @@ def genOpCode(op, fo):
 	    print "child_map_phase", child.map_phase
 	    print "child_reduce_phase", child.reduce_phase
 	    print "child_node_list", child.node_list
+            #child_exp_list = child.output_node.select_list.exp_list
             exp_list = child.output_node.select_list.exp_list
+	    '''exp_list = []
+	    for exp in child_exp_list:
+		if isinstance(exp, expression.Function):
+		    col_list = []
+		    exp.getPara(col_list)
+		    exp_list.extend(col_list)
+		elif isinstance(exp, expression.Column):
+		    exp_list.append(exp)
+	    '''	
             tmp_exp_list = []
             for exp in exp_list:
 	        print "old_exp", exp.evaluate()
-	        if isinstance(exp, expression.Column) is False:
+	        if isinstance(exp, expression.Constant):
 		    continue
                 tmp_index = exp_list.index(exp)
                 new_exp = expression.Column(tb_name, tmp_index)
                 new_exp.table_name = tb_name
                 new_exp.column_name = int(new_exp.column_name)
-                new_exp.column_type = exp.column_type
+		if isinstance(exp, expression.Function):
+                    new_exp.column_type = exp.getValueType()
+		else:
+		    new_exp.column_type = exp.column_type
                 tmp_exp_list.append(new_exp)
 	        print "new_exp", new_exp.evaluate()
             op.map_output[tb_name] = tmp_exp_list
@@ -656,7 +669,12 @@ def genOpCode(op, fo):
     print >> fo, "\t\t\t\tString line = values.next().toString();"
     print >> fo, "\t\t\t\tString dispatch = line.split(\"\\\|\")[1];"
     print >> fo, "\t\t\t\ttmp = line.substring(2+dispatch.length()+1);"
-    print >> fo, "\t\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
+
+    if len(op.reduce_phase) == 0:
+	print >> fo, "\t\t\t\tNullWritable key_op = NullWritable.get();"
+	print >> fo, "\t\t\t\tcontext.write(key_op, new Text(tmp));"
+    else:
+        print >> fo, "\t\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
 
     for reduce_node in op.reduce_phase:
         if reduce_node not in op.ic_list:
@@ -743,8 +761,9 @@ def genOpCode(op, fo):
             print >> fo, "\t\t\t\t\t" + tmp_right_array + ".add(tmp);"
 
     print >> fo, "\t\t\t}"
-
-    print >> fo, "\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
+    
+    if len(op.reduce_phase) > 0:
+        print >> fo, "\t\t\tString[] " + line_buf + " = tmp.split(\"\\\|\");"
     for reduce_node in op.reduce_phase:
         if reduce_node not in op.ic_list:
             continue
@@ -1227,7 +1246,8 @@ def genOpCode(op, fo):
                 print >> fo, "\t\t\t}"
 
     # generate final output
-    print >> fo, "\t\t\tNullWritable key_op = NullWritable.get();"
+    if len(op.reduce_phase) > 0:
+        print >> fo, "\t\t\tNullWritable key_op = NullWritable.get();"
     for reduce_node in op.reduce_phase:
         if len(op.oc_list) != 0 and (reduce_node not in op.oc_list or reduce_node.parent in op.oc_list):
             continue
@@ -1317,12 +1337,13 @@ def excute(op_list, filename):
 	output_path = datadir + filename + op.getID() + "/"
 	executeJar(jardir, filename + op.getID(), input_path, output_path)
 
-def run(op, filename):
+def run(op, filename, _run=True):
     op_list = genCode(op, filename)
     for op in op_list:
 	print op.getID()
-    setup(op_list, filename)
-    excute(op_list, filename)
+    if _run:
+        setup(op_list, filename)
+        excute(op_list, filename)
 
 def __genCode__(op, filename):
     op_name = filename + op.getID() + ".java"
