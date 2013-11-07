@@ -1102,7 +1102,7 @@ class JoinNode(Node):
 	    if join_exp is not None:
 		col_list = []
 		#print "CHILD_NAME"
-		if isinstance(child, SPNode) and isinstance(child.child, TableNode):					
+		'''if isinstance(child, SPNode) and isinstance(child.child, TableNode):					
 		    if self.is_explicit is True:
 			self.join_condition.on_condition_exp = self.join_condition.on_condition_exp.genIndex(child)
 			self.join_condition.on_condition_exp.getPara(col_list)
@@ -1116,14 +1116,14 @@ class JoinNode(Node):
 			    # DEBUG
 			    print "CHILD_NAME", col.table_name
 			    #print "col.table_name:", col.table_name
-			    self.table_list.append(child_name)
-		else:
-		    join_exp.getPara(col_list)
-		    for col in col_list:
+			    self.table_list.append(child_name)'''
+		#else:
+		join_exp.getPara(col_list)
+		for col in col_list:
 			# DEBUG
 			#print "join_exp, __genColumnIndex__: ", [col.table_name, col.column_name]
 			#print select_dic
-			self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
+		    self.__genColumnIndex__(col, exp_list, select_dic, self.table_list, child_name)
 			#print "after:", [col.table_name, col.column_name]
 		
 		# generate the index of select list
@@ -1260,23 +1260,23 @@ class JoinNode(Node):
         table_name = exp.table_name
 	print "__genOriginalExp__:", exp.evaluate(), table_name, index
         if table_name == "LEFT":
-	    if flag and isinstance(self.left_child, SPNode) and isinstance(self.left_child.child, TableNode):
+	    '''if flag and isinstance(self.left_child, SPNode) and isinstance(self.left_child.child, TableNode):
 		tmp_exp = copy.deepcopy(exp)
 		tmp_exp.table_name = self.left_child.select_list.exp_list[0].table_name
 		new_exp = copy.deepcopy(self.left_child.child.__getOriginalExp__(tmp_exp, False))
-	    else:            
-		index = exp.column_name
-		tmp_exp = self.left_child.select_list.exp_list[index]
-		new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp, False))
+	    else:'''            
+	    index = exp.column_name
+	    tmp_exp = self.left_child.select_list.exp_list[index]
+	    new_exp = copy.deepcopy(self.left_child.__getOriginalExp__(tmp_exp, False))
         else:
-	    if flag and isinstance(self.right_child, SPNode) and isinstance(self.right_child.child, TableNode):
+	    '''if flag and isinstance(self.right_child, SPNode) and isinstance(self.right_child.child, TableNode):
 		tmp_exp = copy.deepcopy(exp)
 		tmp_exp.table_name = self.right_child.select_list.exp_list[0].table_name
 		new_exp = copy.deepcopy(self.right_child.child.__getOriginalExp__(tmp_exp, False))
-            else:
-		index = exp.column_name
-		tmp_exp = self.right_child.select_list.exp_list[index]
-		new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
+            else:'''
+	    index = exp.column_name
+	    tmp_exp = self.right_child.select_list.exp_list[index]
+	    new_exp = copy.deepcopy(self.right_child.__getOriginalExp__(tmp_exp, False))
 	print "new_exp", new_exp.evaluate()
         return new_exp
 
