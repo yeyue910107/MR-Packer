@@ -1324,7 +1324,7 @@ def setup(op_list, filename):
 	compileCode(codedir, filename + op_id)
 	genJar(jardir, package, filename + op_id)
 
-def excute(op_list, filename):
+def execute(op_list, filename):
     datadir = config.data_dir
     jardir = "./"
     for op in op_list:
@@ -1332,7 +1332,7 @@ def excute(op_list, filename):
 	if len(op.table_list) > 0:
 	    for table in op.table_list:
 		input_path.append(datadir + table + "/")
-	elif len(op.child_list) > 0:
+	if len(op.child_list) > 0:
 	    for child in op.child_list:
 		input_path.append(datadir + filename + child.getID() + "/")
 	output_path = datadir + filename + op.getID() + "/"
@@ -1344,7 +1344,7 @@ def run(op, filename, _run=True):
     print id_list
     if _run:
         setup(op_list, filename)
-        excute(op_list, filename)
+        execute(op_list, filename)
 
 def __genCode__(op, filename):
     op_name = filename + op.getID() + ".java"
