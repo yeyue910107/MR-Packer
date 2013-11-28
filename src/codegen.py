@@ -21,6 +21,7 @@ import expression
 import copy
 import node
 import util
+import config
 
 math_func_dic = { "PLUS":" + ", "MINUS":" - ", "DIVIDE":" / ", "MULTIPLY":" * " }
 agg_func_list = [ "SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT" ]
@@ -1324,7 +1325,7 @@ def setup(op_list, filename):
 	genJar(jardir, package, filename + op_id)
 
 def excute(op_list, filename):
-    datadir = "/test/mrpacker/"
+    datadir = config.data_dir
     jardir = "./"
     for op in op_list:
 	input_path = []
@@ -1335,12 +1336,12 @@ def excute(op_list, filename):
 	    for child in op.child_list:
 		input_path.append(datadir + filename + child.getID() + "/")
 	output_path = datadir + filename + op.getID() + "/"
-	executeJar(jardir, filename + op.getID(), input_path, output_path)
+	executeJar(jardir + filename + op.getID() + ".jar", input_path, output_path)
 
 def run(op, filename, _run=True):
     op_list = genCode(op, filename)
-    for op in op_list:
-	print op.getID()
+    id_list = [op.getID() for op in op_list]
+    print id_list
     if _run:
         setup(op_list, filename)
         excute(op_list, filename)
@@ -1353,13 +1354,15 @@ def __genCode__(op, filename):
     fo.close()
 
 def compileCode(codedir, filename):
+    hadoop_core = config.hadoop_core_dir
     os.system("mkdir " + filename)
     print "mkdir " + filename
     #version = "1.0.0"
     #if "HADOOP_HOME" in os.environ:
     #    version = commands.getoutput("$HADOOP_HOME/bin/hadoop version").split("\n")[0].split(" ")[1]
 
-    cmd = "javac -classpath $HADOOP_HOME/hadoop-core-*.jar "
+    #cmd = "javac -classpath $HADOOP_HOME/*core*.jar "
+    cmd = "javac -classpath " + hadoop_core + " "
     cmd += codedir + filename + ".java -d " + codedir + filename
     print cmd
     os.system(cmd)
@@ -1372,8 +1375,9 @@ def genJar(jardir, package, filename):
     os.chdir("..")
     os.system("rm -r " + filename)
 
-def executeJar(jardir, filename, input_path, output_path):
-    cmd = "hadoop jar " + jardir + filename + ".jar"
+def executeJar(jarfile, input_path, output_path):
+    cmd = "hadoop jar " + jarfile
+    #cmd = "hadoop jar " + jardir + filename + ".jar"
     for path in input_path:
 	cmd += " " + path
     cmd += " " + output_path
