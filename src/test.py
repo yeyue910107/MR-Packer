@@ -22,6 +22,7 @@ import op
 import codegen
 import sys
 import os
+import config
 
 if __name__ == "__main__":
     pwd = os.getcwd()
@@ -30,15 +31,16 @@ if __name__ == "__main__":
     pt = ast.astToQueryPlan(schema, _file)
     _file.close()
     mrq = node.planTreeToMRQ(pt)
-    mrq.optimize()
-    mrq.postProcess()
-    '''_run = False
+    if len(sys.argv) < 2:
+        print "./test.py [o/number] [r]"
+        exit(0)
+    _run = False
     if len(sys.argv) == 3 and sys.argv[2] == "r":
 	_run = True
-    mrq.getLowCostMRQ(sys.argv[1], _run)'''
-    filename = "testquery"
-    #op_list = codegen.genCode(mrq, filename)
-    #id_list = [op.getID() for op in op_list]
-    #print id_list
-    codegen.run(mrq, filename)
-    #_file.close()
+    if sys.argv[1] == "o":
+        mrq.optimize()
+        mrq.postProcess()
+        filename = "testquery"
+        codegen.run(mrq, filename, _run)
+    else:
+        mrq.getLowCostMRQ(sys.argv[1], _run)
