@@ -376,7 +376,7 @@ class Op(object):
 	    if count >= int(stop):
 		root_mrq = self.findRoot()
 		root_mrq.postProcess()
-		root_mrq.__printAll__()
+		#root_mrq.__printAll__()
 		#op_list = codegen.genCode(root_mrq, "testquery")
 		#op_id = [op.getID() for op in op_list]
 		#print op_id
