@@ -18,10 +18,9 @@ import sys
 import config
 import os
 import random
-import pydoop.hdfs as hdfs
-import pydoop.hdfs.path as hpath
 import codegen
 import json
+import config
 
 mapCounterTitle='''FILE_BYTES_READ,FILE: Number of bytes read,FILE_BYTES_WRITTEN,FILE: Number of bytes written,FILE_READ_OPS,FILE: Number of read operations,FILE_LARGE_READ_OPS,FILE: Number of large read operations,FILE_WRITE_OPS,FILE: Number of write operations,HDFS_BYTES_READ,HDFS: Number of bytes read,HDFS_BYTES_WRITTEN,HDFS: Number of bytes written,HDFS_READ_OPS,HDFS: Number of read operations,HDFS_LARGE_READ_OPS,HDFS: Number of large read operations,HDFS_WRITE_OPS,HDFS: Number of write operations,MAP_INPUT_RECORDS,Map input records,MAP_OUTPUT_RECORDS,Map output records,MAP_OUTPUT_BYTES,Map output bytes,MAP_OUTPUT_MATERIALIZED_BYTES,Map output materialized bytes,SPLIT_RAW_BYTES,Input split bytes,COMBINE_INPUT_RECORDS,Combine input records,SPILLED_RECORDS,Spilled Records,FAILED_SHUFFLE,Failed Shuffles,MERGED_MAP_OUTPUTS,Merged Map outputs,GC_TIME_MILLIS,GC time elapsed (ms),CPU_MILLISECONDS,CPU time spent (ms),PHYSICAL_MEMORY_BYTES,Physical memory (bytes) snapshot,VIRTUAL_MEMORY_BYTES,Virtual memory (bytes) snapshot,COMMITTED_HEAP_BYTES,Total committed heap usage (bytes),BYTES_READ,Bytes Read,'''
 
@@ -95,7 +94,7 @@ class Job:
         self.jf_failedMaps=0
         self.jf_failedReduces=0
         
-        self.jf_totalConuters=[]
+        self.jf_totalCounters=[]
 
         self.try_to_analyze(path)
 
@@ -144,7 +143,9 @@ class Job:
         return out
     
     def try_to_analyze(self,path):
-        a=file(os.getcwd()+os.sep+"done"+os.sep+path)
+        #a=file(os.getcwd()+os.sep+"done"+os.sep+path)
+        os.system("cp " + path + " " + config.log_dir + "test.jhist")
+        a=file(config.log_dir + "test.jhist")
         lines=a.readlines()[2:]
         for each in lines:
             eachone=json.loads(each)  #loads for string, and load for file!
@@ -276,7 +277,18 @@ class Job:
         self.jf_failedReduces    = data['failedReduces']
 
         self.jf_totalCounters    = data['totalCounters']['groups']
+
+    def get_jf_totalCountersInfo(self):
+        prefix = 'org.apache.hadoop.mapreduce.'
+        counters = {}
+        counter_filter = [prefix+'FileSystemCounter', prefix+'JobCounter', prefix+'TaskCounter']
+        for each in self.jf_totalCounters:
+            if each['name'] in counter_filter:
+                for infos in each['counts']:
+                    counters[infos['name']] = infos['value']
         
+        return counters         
+    
     def print_jf_totalCountersInfo(self):
         out=""
         out+=self.js_jobName+","+self.js_jobid+","
@@ -359,6 +371,35 @@ class ReduceTask:
         self.red_finishTime=0
         self.red_counter=[]
 
+def getJobIDFromLog(tmp_log_dir=config.tmp_log_dir):
+    #tmp_log_dir = config.tmp_log_dir
+    flag = 'Running job'
+    tmp_file = file(tmp_log_dir, "r")
+    for line in tmp_file:
+        if line.find(flag) >= 0:
+            jobid = line.split(':')[-1].strip(' \n')
+            tmp_file.close()
+            print jobid
+            return jobid
+    tmpfile.close()
+    return None
+
+def __getJobPara__(jobid):
+    history_dir = config.history_dir
+    log_dir = config.log_dir
+    cmd = "hadoop fs -get " + history_dir + jobid + "*.jhist " + log_dir
+    print cmd
+    os.system(cmd)
+
+    job = Job(log_dir + jobid + "*.jhist")
+    counters = job.get_jf_totalCountersInfo()
+    print "job_para: ", counters
+    return job.get_jf_totalCountersInfo()
+
+def getJobPara():
+    jobid = getJobIDFromLog()
+    return __getJobPara__(jobid)
+
 prefix="org.apache.hadoop.mapreduce.jobhistory."
 
 def getJobCounters(jobs):
@@ -405,5 +446,10 @@ def ana():
     out.close()
     getJobCounters(jobs)
 
-ana()
+def test():
+    job = Job("./logs/test.jhist")
+    counters = job.get_jf_totalCountersInfo()
+    print counters
 
+#ana()
+#test()
