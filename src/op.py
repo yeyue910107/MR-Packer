@@ -48,6 +48,7 @@ class Op(object):
     is_free_vertex = False
     alpha = 1
     beta = 1
+    job_para = {}
 
     def __init__(self):
 	self.id = []
@@ -63,6 +64,9 @@ class Op(object):
 	self.map_output = {}
 	self.map_filter = {}
 	self.output_node = None
+        self.job_para = {}
+        self.is_composite = False
+        self.is_free_vertex = False
     
     def getID(self):
 	if len(self.id) > 0:
@@ -302,7 +306,7 @@ class Op(object):
 	new_op = Rule(rule_type).merge(op1, op2)
 	if new_op is None:
 	    return None
-	print "op2.parent:", op2, op2.id, op2.parent, op2.parent.id, op2.parent.child_list
+	#print "op2.parent:", op2, op2.id, op2.parent, op2.parent.id, op2.parent.child_list
 	new_op.parent = op2.parent
 	new_op.child_list.extend(op1.child_list)
 	new_op.child_list.extend(op2.child_list)
@@ -409,9 +413,9 @@ class Op(object):
         minset_num = 0
         free_vertexes = []
         self.preOptimize(free_vertexes, minset_map, minset, minset_num)
-	print "minset_map:", minset_map
         self = self.mergeMinset(minset_map, minset, minset_num)
         self.mergeFreeVertex(free_vertexes)
+        return self
 
     def mergeMinset(self, minset_map, minset, minset_num):
         if len(self.child_list) == 0:
@@ -424,7 +428,7 @@ class Op(object):
 	    if tmp is not None and tmp.is_free_vertex is False and minset_map[self] == minset_map[tmp]:
 	        new_op = None
 	        st_type = Rule.get_st(tmp, self)
-		print "st_type:", st_type
+		print "1st_type:", st_type
                 op1_child, op2_child = [], []
                 new_op = Op.merge(tmp, self, st_type, op1_child, op2_child)
 	        minset_map[new_op] = minset_map[self]
@@ -438,7 +442,7 @@ class Op(object):
             if lop is not None and lop.is_free_vertex is False and minset_map[self] == minset_map[lop]:
                 new_op = None
                 st_type = Rule.get_st(lop, self)
-		print "st_type:", st_type
+		print "2lst_type:", st_type
                 op1_child, op2_child = [], []
                 new_op = Op.merge(lop, self, st_type, op1_child, op2_child)
 	        minset_map[new_op] = minset_map[self]
@@ -447,7 +451,7 @@ class Op(object):
             if rop is not None and rop.is_free_vertex is False and minset_map[self] == minset_map[rop]:
                 new_op = None
                 st_type = Rule.get_st(rop, self)
-		print "st_type:", st_type
+		print "2rst_type:", st_type
                 op1_child, op2_child = [], []
                 new_op = Op.merge(rop, self, st_type, op1_child, op2_child)
 	        minset_map[new_op] = minset_map[self]
