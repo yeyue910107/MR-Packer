@@ -45,26 +45,26 @@ class ASTreeNode:
     def toRootSelectNode(self):
 	rs_node = node.RootSelectNode()
 	
-	if self.token_name != "SELECT":
+	if self.token_name != "T_SELECT":
 	    # TODO error
             pass
 	
 	for child in self.child_list:
 
-	    if child.token_name == "COLUMN_LIST":
+	    if child.token_name == "T_COLUMN_LIST":
 		rs_node.select_list = SelectListParser(child)
-	    elif child.token_name == "WHERE":
+	    elif child.token_name == "T_WHERE":
 		rs_node.where_condition = WhereConditionParser(child)
-	    elif child.token_name == "HAVING":
+	    elif child.token_name == "T_HAVING":
 		rs_node.having_clause = WhereConditionParser(child)
-	    elif child.token_name == "GROUP_BY":
+	    elif child.token_name == "T_GROUP_BY":
 		rs_node.groupby_clause = GroupbyParser(child)
-	    elif child.token_name == "ORDER_BY":
+	    elif child.token_name == "T_ORDER_BY":
 		rs_node.orderby_clause = OrderbyParser(child)
-	    elif child.token_name == "FROM":
+	    elif child.token_name == "T_FROM":
 		tmp_list = []
 		for child_child in child.child_list:
-		    if child_child.token_name != "SELECT":
+		    if child_child.token_name != "T_SELECT":
 			tmp_list.append(child_child)
 		    else:
 			tmp_list.append(child_child.toRootSelectNode())
@@ -133,7 +133,7 @@ class SelectListParser(ASTreeNodeParser):
 	
 	exp_parser = expression.ExpressionParser()
 	for child in select_list.child_list:
-	    if child.token_name == "SELECT_COLUMN":
+	    if child.token_name == "T_SELECT_COLUMN":
 		input_exp_list = []
 		as_alias = None
 		as_flag = False
@@ -148,7 +148,7 @@ class SelectListParser(ASTreeNodeParser):
 			fin_flag = False
 			as_alias = token["content"]
 			continue
-		    if token["name"] == "RESERVED" and token["content"] == "AS":
+		    if token["name"] == "T_RESERVED" and token["content"] == "AS":
 			as_flag = True
 			fin_flag = False
 		    if fin_flag == True:
@@ -175,7 +175,7 @@ class SelectListParser(ASTreeNodeParser):
 	    return ret_str
 		
 	for child in select_list.child_list:
-	    if child.token_name == "SELECT_COLUMN":
+	    if child.token_name == "T_SELECT_COLUMN":
 		tmp_str = ""
 		for child in child.child_list:
 			tmp_str += str(child.content)
@@ -217,18 +217,18 @@ class OnConditionParser(ASTreeNodeParser):
 	self.converted_exp_str = where_condition_parser.convertExpListToStr(self.on_condition_exp)
 
     def convertItemToStr(self, item):
-	if item.token_name == "COND_OR" or item.token_name == "COND_AND":
+	if item.token_name == "T_COND_OR" or item.token_name == "T_COND_AND":
 	    ret_str = ""
 	    for child in item.child_list:
 		ret_str += self.convertItemToStr(child)
 		ret_str += " "
 	    return ret_str
 	else:
-	    if item.token_name == "GT":
+	    if item.token_name == "GTH":
 		return ">"
-	    elif item.token_name == "LT":
+	    elif item.token_name == "LTH":
 		return "<"
-	    elif item.token_name == "NE":
+	    elif item.token_name == "NOT_EQ":
 		return "<>"
 	    else:
 		return item.content
@@ -259,22 +259,22 @@ class WhereConditionParser(ASTreeNodeParser):
 	self.converted_exp_str = self.convertExpListToStr(self.where_condition_exp)
 
     def convertItemToStr(self, item):
-	if item.token_name == "COND_OR" or item.token_name == "COND_AND":
+	if item.token_name == "T_COND_OR" or item.token_name == "T_COND_AND":
 	    ret_str = ""
 	    for child in item.child_list:
 		ret_str += self.convertItemToStr(child)
 		ret_str += ""
 	    return ret_str
 	else:
-	    if item.token_name == "GT":
+	    if item.token_name == "GTH":
 		return ">"
-	    elif item.token_name == "LT":
+	    elif item.token_name == "LTH":
 		return "<"
-	    elif item.token_name == "NE":
+	    elif item.token_name == "NOT_EQ":
 		return "<>"
-	    elif item.token_name == "GE":
+	    elif item.token_name == "GEQ":
 		return ">="
-	    elif item.token_name == "LE":
+	    elif item.token_name == "LEQ":
 		return "<="
 	    else:
 		return item.content
@@ -301,18 +301,18 @@ class WhereConditionParser(ASTreeNodeParser):
 	    tmp_list = where_condition
 	if len(tmp_list) == 1:
 	    item = tmp_list[0]
-	    if item.token_name != "COND_OR" and item.token_name != "COND_AND":
+	    if item.token_name != "T_COND_OR" and item.token_name != "T_COND_AND":
 		# TODO error
                 pass
-	    func_name = item.token_name[5:]
+	    func_name = item.token_name[7:]
 	    child_list = item.child_list
 	    first_child = child_list[0]
-	    if first_child.token_name == "COND_OR" or first_child.token_name == "COND_AND":
+	    if first_child.token_name == "T_COND_OR" or first_child.token_name == "T_COND_AND":
 		exp_list = []
 		for child in child_list:
 		    exp_list.append(self.convertItemListToExpList([child]))
 		return expression.Function(func_name, exp_list)
-	    elif first_child.token_name == "RESERVED" and (first_child.content == "AND" or first_child.content == "OR"):
+	    elif first_child.token_name == "T_RESERVED" and (first_child.content == "AND" or first_child.content == "OR"):
 		return self.convertItemListToExpList(child_list[1:])
 	    else:
 		return self.convertItemListToExpList(child_list)
@@ -320,7 +320,7 @@ class WhereConditionParser(ASTreeNodeParser):
 	else:
 	    # cases like ( COND_AND )
 	    if len(tmp_list) == 3:
-		if tmp_list[0].token_name == "LPAREN" and tmp_list[2].token_name == "RPAREN" and (tmp_list[1].token_name == "COND_AND" or tmp_list[1].token_name == "COND_OR"):
+		if tmp_list[0].token_name == "LPAREN" and tmp_list[2].token_name == "RPAREN" and (tmp_list[1].token_name == "T_COND_AND" or tmp_list[1].token_name == "T_COND_OR"):
 		    return self.convertItemListToExpList([tmp_list[1]])
 	    exp_parser = expression.ExpressionParser()
 	    token_list = []
@@ -355,7 +355,7 @@ class GroupbyParser(ASTreeNodeParser):
 	    return ret_str
 	for child in groupby.child_list:
 	    ret_str += child.content
-	    if child.token_name == "RESERVED":
+	    if child.token_name == "T_RESERVED":
 		ret_str += " "
 	
 	return ret_str
