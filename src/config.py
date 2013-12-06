@@ -15,10 +15,21 @@
    limitations under the License.
 """
 
-ratio = 0.1
+code_dir = "./code/"
+jar_dir = "./jar/"
+script = "./testscript"
 
-hadoop_tmp_dir = "/tmp/"
+ratio = 0.4
+
+hadoop_tmp_dir = "/tmp/sample/"
 hadoop_core_dir = "/home/hadoop/hadoop/hadoop-core-*.jar"
 data_dir = "/test/mrpacker/"
 
 optimize = True
+run = True
+costmodel = True
+
+history_dir = "/tmp/hadoop-yarn/staging/history/done_intermediate/hadoop23/"
+log_dir = "./logs/"
+tmp_log_dir = log_dir + "tmp_log"
+fs_tmp_dir = "./tmp/"
