@@ -18,15 +18,18 @@ import sys
 import commands
 import os
 import expression
+import ast
 import copy
 import node
 import util
 import config
+import job
+import sampler
 
 math_func_dic = { "PLUS":" + ", "MINUS":" - ", "DIVIDE":" / ", "MULTIPLY":" * " }
 agg_func_list = [ "SUM", "AVG", "COUNT", "MAX", "MIN", "COUNT_DISTINCT" ]
 bool_func_dic = { "AND":" && ", "OR":" || " }
-relation_func_dic = { "EQ":" == ", "GT":" > ", "LT":" < ", "NEQ":" != ", "GE":" >= ", "LE":" <= "}
+relation_func_dic = { "EQ":" == ", "GTH":" > ", "LTH":" < ", "NOT_EQ":" != ", "GEQ":" >= ", "LEQ":" <= "}
 value_type_list = ["INTEGER", "DECIMAL", "TEXT", "DATE"]
 
 def genSelectFunctionCode(exp, buf_dic):
@@ -54,7 +57,9 @@ def genSelectFunctionCode(exp, buf_dic):
 def genParaCode(para, buf_dic, flag=False, groupby_exp_list=None, hash_key=None):
     ret_str = ""
     print "para", para
+    print "buf_dic", buf_dic
     if isinstance(para, expression.Column):
+        print "para_col", para.column_name
         ret_str += __genParaCode__(para.column_type, para.column_name, buf_dic[para.table_name])
     elif isinstance(para, expression.Function):
         if flag:
@@ -789,11 +794,11 @@ def genOpCode(op, fo):
                 elif agg_func == "COUNT_DISTINCT":
                     print >> fo, "\t\t\t", tmp_agg_buf + "[" + exp_index + "] = (double) " + tmp_count_buf + "[" + exp_index + "].size();"
 
-	    buf_dict = {}
+	    buf_dic = {} #change
             for tn in reduce_node.table_list:
-                buf_dict[tn] = line_buf
+                buf_dic[tn] = line_buf #change
 
-            buf_dict["AGG"] = tmp_agg_buf
+            buf_dic["AGG"] = tmp_agg_buf #change
 
             # TODO
 	    reduce_value = ""
@@ -803,12 +808,12 @@ def genOpCode(op, fo):
             	    tmp_list = []
             	    getGroupbyExp(exp, tmp_list)
 		    if len(tmp_list) > 0:
-                        reduce_value += genGroupbyExpCode(exp, buf_dict, gb_exp_list, None)
+                        reduce_value += genGroupbyExpCode(exp, buf_dic, gb_exp_list, None) #change
                         if reduce_value_type == "Text":
                             reduce_value += " + \"|\""
                         reduce_value += "+"
                     else:
-                        reduce_value += genSelectFunctionCode(exp, buf_dict)
+                        reduce_value += genSelectFunctionCode(exp, buf_dic)#change
                         if reduce_value_type == "Text":
                             reduce_value += " + \"|\""
                         reduce_value += "+"
@@ -977,7 +982,7 @@ def genOpCode(op, fo):
         if reduce_node not in op.oc_list:
             continue
         if isinstance(reduce_node, node.GroupbyNode):
-            reduce_node_index = op.reduce_phase.index(reduce_node.child)
+            reduce_node_index = op.reduce_phase.index(reduce_node)
 	    post_nodes = []
 	    op.getReducePhasePostNode(reduce_node, reduce_node, post_nodes)
 	    if len(post_nodes) == 1:
@@ -991,28 +996,34 @@ def genOpCode(op, fo):
             tmp_gb_output = "tmp_gb_output_" + str(op.reduce_phase.index(reduce_node))
             tmp_dc_output = "tmp_dc_output_" + str(op.reduce_phase.index(reduce_node))
             tmp_count_output = "tmp_count_output_" + str(op.reduce_phase.index(reduce_node))
-            print >> fo, "\t\t\tHashtable<String, Double>[] " + tmp_gb_output + " = new Hashtable<String, Double>[" + str(tmp_output_len) + "]();"
-            print >> fo, "\t\t\tHashtable<String, ArrayList>[] " + tmp_dc_output + " = new Hashtable<String, ArrayList>[" + str(tmp_output_len) + "]();"
-            print >> fo, "\t\t\tHashtable<String, Integer>[] " + tmp_count_output + " = new Hashtable<String, Integer>[" + str(tmp_output_len) + "]();"
+            print >> fo, "\t\t\tHashtable<String, Double>[] " + tmp_gb_output + " = new Hashtable[" + str(tmp_output_len) + "];"
+            print >> fo, "\t\t\tHashtable<String, ArrayList>[] " + tmp_dc_output + " = new Hashtable[" + str(tmp_output_len) + "];"
+            print >> fo, "\t\t\tHashtable<String, Integer>[] " + tmp_count_output + " = new Hashtable[" + str(tmp_output_len) + "];"
             print >> fo, "\t\t\tfor (int i = 0; i < " + str(tmp_output_len) + "; i++) {"
             print >> fo, "\t\t\t\t" + tmp_gb_output + "[i] = new Hashtable<String, Double>();"
             print >> fo, "\t\t\t\t" + tmp_dc_output + "[i] = new Hashtable<String, ArrayList>();"
             print >> fo, "\t\t\t\t" + tmp_count_output + "[i] = new Hashtable<String, Integer>();"
             print >> fo, "\t\t\t}"
             print >> fo, "\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++) {"
-            print >> fo, "\t\t\t\tString[] tmp_buf = ((String)" + tmp_gb_input + ".get(i)).split(\"\\|\");"
+            print >> fo, "\t\t\t\tString[] tmp_buf = ((String)" + tmp_gb_input + ".get(i)).split(\"\\\|\");"
                
             tmp_key = ""
             for i in range(0, key_len):
                 tmp_key += "tmp_buf[" + str(i) + "] + "
                 tmp_key += "\"|\""
-            tmp_key = tmp_key[:-1]
+            #tmp_key = tmp_key[:-1]
+
+	    buf_dic = {} #change
+            for tn in reduce_node.table_list:
+                buf_dic[tn] = "tmp_buf"
+
+            buf_dic["AGG"] = tmp_agg_buf
               
             for i in range(0, tmp_output_len):
                 exp = gb_exp_list[i]
                 func_name = exp.getGroupbyFuncName()
                 if func_name == "MAX":
-                    tmp = genSelectFuncCode(exp, buf_dict)
+                    tmp = genSelectFunctionCode(exp, buf_dic)
                     print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey("+tmp_key + ")) {"
                     print >> fo, "\t\t\t\t\tDouble max_tmp = (double)" + tmp  + ";"
                     print >> fo, "\t\t\t\t\tif (max_tmp > " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
@@ -1020,9 +1031,8 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t} else {"
                     print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
                     print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
                 elif func_name == "MIN":
-                    tmp = genSelectFuncCode(exp, buf_dict)
+                    tmp = genSelectFunctionCode(exp, buf_dic)
                     print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
                     print >> fo, "\t\t\t\t\tDouble min_tmp = (double)" + tmp +";"
                     print >> fo, "\t\t\t\t\tif (min_tmp < " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + "))"
@@ -1030,9 +1040,9 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t} else {"
                     print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");"
                     print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
                 elif func_name == "SUM": 
-                    tmp = genSelectFuncCode(exp, buf_dict)
+                    tmp = genSelectFunctionCode(exp, buf_dic)
+                    print "tmp, buf_dic", tmp, buf_dic
                     print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
                     print >> fo, "\t\t\t\t\tDouble sum_tmp = (double)" + tmp + ";"
                     print >> fo, "\t\t\t\t\t sum_tmp += " + tmp_gb_output + "[" + str(i) + "].get(" + tmp_key + ");"
@@ -1040,7 +1050,6 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t} else {"
                     print >> fo, "\t\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(" + tmp_key + ",(double)" + tmp + ");";
                     print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
                 elif func_name == "AVG":
                     tmp = genSelectFunctionCode(exp, buf_dic)
                     print >> fo, "\t\t\t\tif (" + tmp_gb_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
@@ -1055,7 +1064,6 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t}"
                     print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] += 1;"
                     print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + tmp_key + "] = 1;"
-                    print >> fo, "\t\t\t}"
                     
                     print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[" + str(i) + "].keySet()) {"
                     print >> fo, "\t\t\t\tDouble count = (double) " + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
@@ -1063,7 +1071,7 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), avg);"
                     print >> fo, "\t\t\t}"
                 elif func_name == "COUNT_DISTINCT":
-                    tmp = genSelectFuncCode(exp, buf_dict)
+                    tmp = genSelectFunctionCode(exp, buf_dic) #change
                     print >> fo, "\t\t\t\tif (" + tmp_dc_output + "[" + str(i) + "].containsKey(" + tmp_key + ")) {"
                     print >> fo, "\t\t\t\t\tif (!" + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").contains(" + tmp + ")){"
                     print >> fo, "\t\t\t\t\t\tArrayList tmp_al = " + tmp_dc_output + "[" + str(i) + "].get(" + tmp_key + ").add(" + tmp + ");"
@@ -1072,7 +1080,6 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t} else {"
                     print >> fo, "\t\t\t\t\t\t" + tmp_dc_output + "[" + str(i) + "].put(" + tmp_key + "," + tmp + ");"
                     print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
                       
                     print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_dc_output + "[" + str(i) + "].keySet()) {"
                     print >> fo, "\t\t\t\tDouble count = (double)" + tmp_dc_output + "[" + str(i) + "].get(tmp_key).size();"
@@ -1085,13 +1092,35 @@ def genOpCode(op, fo):
                     print >> fo, "\t\t\t\t} else {"
                     print >> fo, "\t\t\t\t\t" + tmp_count_output + "[" + str(i) + "].put(" + tmp_key + ",1);"
                     print >> fo, "\t\t\t\t}"
-                    print >> fo, "\t\t\t}"
                         
                     print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_count_output + "[" + str(i) + "].keySet()) {"
                     print >> fo, "\t\t\t\tDouble count = (double)" + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
                     print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), count);"
                     print >> fo, "\t\t\t}"
-                
+                   
+            print >> fo, "\t\t\t}"
+
+            for i in range(0, tmp_output_len):
+                exp = gb_exp_list[i]
+                func_name = exp.getGroupbyFuncName()
+
+                if func_name == "AVG":
+                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[" + str(i) + "].keySet()) {"
+                    print >> fo, "\t\t\t\tDouble count = (double) " + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                    print >> fo, "\t\t\t\tDouble avg = " + tmp_gb_output + "[" + str(i) + "].get(tmp_key)/count;"
+                    print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), avg);"
+                    print >> fo, "\t\t\t}"
+                elif func_name == "COUNT_DISTINCT":
+                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_dc_output + "[" + str(i) + "].keySet()) {"
+                    print >> fo, "\t\t\t\tDouble count = (double)" + tmp_dc_output + "[" + str(i) + "].get(tmp_key).size();"
+                    print >> fo, "\t\t\t\t" + tmp_gb_output +"[" + str(i) + "].put(tmp_key.toString(), count);"
+                    print >> fo, "\t\t\t}"
+                elif func_name == "COUNT":
+                    print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_count_output + "[" + str(i) + "].keySet()) {"
+                    print >> fo, "\t\t\t\tDouble count = (double)" + tmp_count_output + "[" + str(i) + "].get(tmp_key);"
+                    print >> fo, "\t\t\t\t" + tmp_gb_output + "[" + str(i) + "].put(tmp_key.toString(), count);"
+                    print >> fo, "\t\t\t}"
+
             print >> fo, "\t\t\tfor (Object tmp_key: " + tmp_gb_output + "[0].keySet()) {"
             print >> fo, "\t\t\t\tString[] tmp_buf = ((String) " + tmp_gb_input + ".get(0)).split(\"\\\|\");"
             print >> fo, "\t\t\t\tfor (int i = 0; i < " + tmp_gb_input + ".size(); i++){"
@@ -1099,7 +1128,60 @@ def genOpCode(op, fo):
             print >> fo, "\t\t\t\t\tif (((String)tmp_key).compareTo(" + tmp_key + ") == 0)"
             print >> fo, "\t\t\t\t\t\tbreak;"
             print >> fo, "\t\t\t\t}"
+
+            print >> fo, "\t\t\t\tString tmp_result = \"\";"
+            print >> fo, "\t\t\t\tString gb_key = (String) tmp_key;"
             # TODO having clause
+	    reduce_value = ""
+	    for i in range(0, len(reduce_node.select_list.exp_list)):
+ 		exp = reduce_node.select_list.exp_list[i]
+                if exp.getGroupbyFuncName() not in agg_func_list:
+                
+		    if isinstance(exp, expression.Column):
+                        tmp_exp = "tmp_buf[" + str(exp.column_name) + "]"
+                    elif isinstance(exp, expression.Function):
+                        tmp_exp = genSelectFunctionCode(exp, buf_dic) #change
+                        tmp_exp += ".toString()"
+                    elif isinstance(exp, expression.Constant):
+                        tmp_exp = "\""
+                        tmp_exp += __genParaCode__(exp.const_type, ezp.const_value, None)
+                        tmp_exp += "\""
+                    print >> fo, "\t\t\t\ttmp_result = tmp_result.concat("+tmp_exp+");"
+                    print >> fo, "\t\t\t\ttmp_result = tmp_result.concat(\"|\");"
+
+                else:
+                    buf_dic["AGG"] = tmp_gb_output #change
+                    print "gb_exp_list", gb_exp_list
+                    tmp_result = genGroupbyExpCode(exp, buf_dic, gb_exp_list, "gb_key") #change
+                    print >> fo, "\t\t\t\ttmp_result = tmp_result.concat("+tmp_result+"+\"\");"
+                    print >> fo, "\t\t\t\ttmp_result = tmp_result.concat(\"|\");"
+             
+            if reduce_node.where_condition is not None:
+                tmp_list = []
+                getGroupbyExp(reduce_node.where_condition.where_condition_exp, tmp_list)
+                for tmp in tmp_list:
+                    for exp in gb_exp_list:
+                        if tmp.compare(exp):
+                            func_obj = tmp.func_obj
+                            exp_index = gb_exp_list.index(exp)
+                            new_exp = expression.Column("AGG", exp_index)
+                            new_exp.column_name = int(new_exp.column_name)
+                            new_exp.column_type = tmp.get_value_type()
+                            func_obj.replace(tmp, new_exp)
+                            break
+
+                buf_dic = {} #change
+                buf_dic["AGG"] = tmp_gb_output
+                for tn in op.table_list:
+                    buf_dic[tn] = "tmp_buf"
+
+                print >>fo, "\t\t\t\t" + genWhereExpCode(reduce_node.where_condition.where_condition_exp, buf_dic)+ "){\n" #change
+                print >>fo, "\t\t\t\ttmp_output[" + str(reduce_node_index) + "].add(tmp_result);"
+                print >>fo, "\t\t\t\t}"
+            else:
+                print >>fo, "\t\t\t\ttmp_output[" + str(reduce_node_index) + "].add(tmp_result);"
+
+            print >>fo,"\t\t\t}"
         
         elif isinstance(reduce_node, node.JoinNode):
             reduce_node_index = str(op.reduce_phase.index(reduce_node))
@@ -1315,48 +1397,110 @@ def genCode(op, filename):
 	__genCode__(_op, filename)
     return op_list
 
-def setup(op_list, filename):
+def setup(op_list, filename, fo=sys.stdout):
     codedir = "./"
     package = "test"
     jardir = "../"
+    
+    if not os.path.exists(config.code_dir):
+        os.system("mkdir " + config.code_dir)
+        print >> fo, "mkdir " + config.code_dir
+    if not os.path.exists(config.jar_dir):
+        os.system("mkdir " + config.jar_dir)
+        print >> fo, "mkdir " + config.code_dir
+
     for op in op_list:
 	op_id = op.getID()
 	compileCode(codedir, filename + op_id)
 	genJar(jardir, package, filename + op_id)
+        os.system("mv " + filename + op_id + ".java " + config.code_dir)
+        os.system("mv " + filename + op_id + ".jar " + config.jar_dir)
+        print >> fo, "mv " + filename + op_id + ".java " + config.code_dir
+        print >> fo, "mv " + filename + op_id + ".jar " + config.jar_dir
 
-def execute(op_list, filename):
+def execute(op_list, filename, _sample=False):
     datadir = config.data_dir
-    jardir = "./"
+    jardir = config.jar_dir
+    tmp_log_dir = config.tmp_log_dir
+    hadoop_tmp_dir = config.hadoop_tmp_dir
     for op in op_list:
 	input_path = []
+        sample_input_path = []
 	if len(op.table_list) > 0:
 	    for table in op.table_list:
 		input_path.append(datadir + table + "/")
+                sample_input_path.append(hadoop_tmp_dir + table + "/")
 	if len(op.child_list) > 0:
 	    for child in op.child_list:
 		input_path.append(datadir + filename + child.getID() + "/")
+                sample_input_path.append(hadoop_tmp_dir + filename + child.getID() + "/")
 	output_path = datadir + filename + op.getID() + "/"
-	executeJar(jardir + filename + op.getID() + ".jar", input_path, output_path)
+        sample_output_path = hadoop_tmp_dir + filename + op.getID() + "/"
+        if _sample:
+	    op.job_para = sampler.doSample(jardir + filename + op.getID() + ".jar", sample_input_path, sample_output_path, 0)
+	else:
+            executeJar(jardir + filename + op.getID() + ".jar", input_path, output_path)
+    if _sample:
+        os.system("hadoop fs -rmr " + hadoop_tmp_dir + "*")
+        os.system("rm " + config.fs_tmp_dir + "*")
 
-def run(op, filename, _run=True):
+def run(op, filename, _run=False, _sample=False):
     op_list = genCode(op, filename)
     id_list = [op.getID() for op in op_list]
     print id_list
+    genScript(op_list, filename)
     if _run:
         setup(op_list, filename)
-        execute(op_list, filename)
+        execute(op_list, filename, _sample)
 
 def __genCode__(op, filename):
     op_name = filename + op.getID() + ".java"
-    fo = open(op_name,"w")
+    fo = open(op_name, "w")
     genHeader(fo)
     genOpCode(op, fo)
     fo.close()
 
-def compileCode(codedir, filename):
+def genScript(op_list, filename):
+    codedir = "./"
+    package = "test"
+    jardir = "../"
+    hadoop_core = config.hadoop_core_dir
+    fo = open(config.script, "w")
+    
+    '''for op in op_list:
+        op_name = filename + op.getID()
+        print >> fo, "mkdir " + op_name
+        print >> fo, "javac -classpath " + hadoop_core + " " + codedir + op_name + ".java -d " + codedir + op_name 
+	
+        print >> fo, "cd " + op_name
+        print >> fo, "jar -cef " + package + "." + op_name + " " + jardir + op_name + ".jar " + package
+        print >> fo, "cd .."
+        print >> fo, "rm -r " + op_name
+        
+        print >> fo, "mv " + op_name + ".java " + config.code_dir
+        print >> fo, "mv " + op_name + ".jar " + config.jar_dir'''
+        
+    for op in op_list:
+        input_path = []
+	if len(op.table_list) > 0:
+	    for table in op.table_list:
+	        input_path.append(config.data_dir + table + "/")
+	if len(op.child_list) > 0:
+	    for child in op.child_list:
+	       input_path.append(config.data_dir + filename + child.getID() + "/")
+	output_path = config.data_dir + filename + op.getID() + "/"
+        cmd = "hadoop jar " + config.jar_dir + filename + op.getID() + ".jar"
+        for path in input_path:
+	    cmd += " " + path
+        cmd += " " + output_path
+        print >> fo, cmd
+    
+    fo.close
+
+def compileCode(codedir, filename, fo=sys.stdout):
     hadoop_core = config.hadoop_core_dir
     os.system("mkdir " + filename)
-    print "mkdir " + filename
+    print >> fo, "mkdir " + filename
     #version = "1.0.0"
     #if "HADOOP_HOME" in os.environ:
     #    version = commands.getoutput("$HADOOP_HOME/bin/hadoop version").split("\n")[0].split(" ")[1]
@@ -1364,23 +1508,44 @@ def compileCode(codedir, filename):
     #cmd = "javac -classpath $HADOOP_HOME/*core*.jar "
     cmd = "javac -classpath " + hadoop_core + " "
     cmd += codedir + filename + ".java -d " + codedir + filename
-    print cmd
+    print >> fo, cmd
     os.system(cmd)
 
-def genJar(jardir, package, filename):
+def genJar(jardir, package, filename, fo=sys.stdout):
     os.chdir(filename)
+    print >> fo, "cd " + filename
     cmd = "jar -cef " + package + "." + filename + " " + jardir + filename + ".jar " + package
-    print cmd
+    print >> fo, cmd
     os.system(cmd)
     os.chdir("..")
+    print >> fo, "cd .."
     os.system("rm -r " + filename)
+    print >> fo, "rm -r " + filename
 
-def executeJar(jarfile, input_path, output_path):
+def executeJar(jarfile, input_path, output_path, fo=sys.stdout):
+    redirect = config.tmp_log_dir
     cmd = "hadoop jar " + jarfile
     #cmd = "hadoop jar " + jardir + filename + ".jar"
     for path in input_path:
 	cmd += " " + path
-    cmd += " " + output_path
-    print cmd
+    cmd += " " + output_path + " 2>&1 | tee " + redirect
+    print >> fo, cmd
     os.system(cmd)
 
+def gen(schema, xmlfile, queryname, input_dir, output_dir):
+    _file = open(xmlfile, "r")
+    pt = ast.astToQueryPlan(schema, _file)
+    _file.close()
+    mrq = node.planTreeToMRQ(pt)
+    
+    if config.optimize:
+        if config.costmodel:
+            mrq.postProcess()
+            run(mrq, queryname, config.run, config.costmodel)
+        print "mrq0", mrq.id
+        mrq = mrq.optimize()
+        print "mrq1", mrq.id
+        mrq.postProcess()
+        print "mrq2", mrq.id
+        run(mrq, queryname, config.run)
+    
