@@ -403,6 +403,7 @@ class SPNode(Node):
 	if isinstance(self.child, TableNode):
 	    # TODO error
 	    return
+        print self.child
 	child_exp_list = self.child.select_list.exp_list
 	child_exp_dic = self.child.select_list.exp_alias_dic
 	
