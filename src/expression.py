@@ -402,6 +402,9 @@ class Column(Expression):
     def genJoinKey(self):
 	return None
 
+    def getGroupbyFuncName(self):
+        return None
+
     def hasGroupbyFunc(self):
 	return False
 
@@ -464,6 +467,9 @@ class Constant(Expression):
 	    return True
 	return False
 	
+    def getGroupbyFuncName(self):
+        return None
+
     def hasGroupbyFunc(self):
 	return False
 
@@ -490,7 +496,7 @@ class ExpressionParser:
 		t_content = t_content.strip("'")
 		t_content = "\"" + t_content + "\""
 		return Constant(t_content, "TEXT")
-	    elif t_name == "RESERVED" and t_content.upper() == "NULL":
+	    elif t_name == "T_RESERVED" and t_content.upper() == "NULL":
 		return Constant(t_content, "NULL")
 	
 	if length == 3:
@@ -523,13 +529,13 @@ class ExpressionParser:
 		sub_level -= 1
 	
 	    if sub_level == 0:
-		if t_name == "RESERVED" and t_content == "LIKE":
+		if t_name == "T_RESERVED" and t_content == "LIKE":
 		    partition_index = i
 		    partition_type = "LIKE"
-		elif t_name == "RESERVED" and t_content == "IS":
+		elif t_name == "T_RESERVED" and t_content == "IS":
 		    partition_index = i
 		    partition_type = "IS"
-		elif t_name in ["EQ", "GT", "LT", "NEQ", "GE", "LE"]:
+		elif t_name in ["EQ", "GTH", "LTH", "NOT_EQ", "GEQ", "LEQ"]:
 		    partition_index = i
 		    partition_type = t_name
 				
