@@ -15,21 +15,24 @@
    limitations under the License.
 """
 
+# directories for result
 code_dir = "./code/"
 jar_dir = "./jar/"
 script = "./testscript"
 
-ratio = 0.4
-
-hadoop_tmp_dir = "/tmp/sample/"
+# hadoop configuration
 hadoop_core_dir = "/home/hadoop/hadoop/hadoop-core-*.jar"
-data_dir = "/test/mrpacker/"
+data_dir = "/test/mrpacker/"    # default input and output dir
 
-optimize = True
-run = True
-costmodel = True
+# optimizer configuration
+optimize = True    # If True, use optimized algorithm.
+run = False        # If True, execute the generated jobs on Hadoop. If False, just generate script,codes and jars.
+costmodel = False  # If True, use job analyzer with cost model.
 
-history_dir = "/tmp/hadoop-yarn/staging/history/done_intermediate/hadoop23/"
-log_dir = "./logs/"
+# job analyzer configuration
+ratio = 0.4    # sample ratio
+hadoop_tmp_dir = "/tmp/sample/"    # hdfs tmp dir
+history_dir = "/tmp/hadoop-yarn/staging/history/done_intermediate/hadoop23/"    # job history dir
+log_dir = "./logs/"    # local dir for logs
 tmp_log_dir = log_dir + "tmp_log"
-fs_tmp_dir = "./tmp/"
+fs_tmp_dir = "./tmp/"    # local tmp dir
